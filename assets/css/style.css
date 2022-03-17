@@ -39,7 +39,7 @@ body {
     font-weight: 600;
     line-height: 1.25;
     font-family: var(--font);
-    color: rgb(255, 255, 255,);
+    color: rgb(255, 255, 255);
     width: 100%;
     text-align: center;
     text-decoration: none;
@@ -66,7 +66,7 @@ body {
 .link {
     color: rgb(16, 55, 22);
     display: block;
-    background-color: rgba(255, 255, 255, 0.85);
+    background-color: rgb(255, 255, 255);
     font-family: var(--font);
     text-align: center;
     margin-bottom: 20px;
