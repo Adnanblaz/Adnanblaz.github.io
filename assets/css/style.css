@@ -15,19 +15,31 @@ body {
 }
 
 #userPhoto {
-    width: 100px;
-    height: 100px;
+    width: 125px;
+    height: 125px;
     display: block;
     margin: 35px auto 20px;
     border-radius: 50%;
 }
 
 #userName {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: rgb(255, 255, 255);
+    display: block;
+    font-family: var(--font);
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
+#SocialLogo {
     font-size: 1rem;
     font-weight: 600;
     line-height: 1.25;
-    display: block;
     font-family: var(--font);
+    color: rgb(255, 255, 255,);
     width: 100%;
     text-align: center;
     text-decoration: none;
@@ -52,9 +64,9 @@ body {
 }
 
 .link {
-    color: #fff;
+    color: rgb(16, 55, 22);
     display: block;
-    background-color: rgba(46, 143, 56, 0.75);
+    background-color: rgba(255, 255, 255, 0.85);
     font-family: var(--font);
     text-align: center;
     margin-bottom: 20px;
@@ -68,10 +80,10 @@ body {
 }
 
 .link:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-    color: rgb(46, 143, 56);
-    border: solid rgb(46, 143, 56) 2px;
-    border-bottom: 5px solid rgb(46, 143, 56);
+    background-color: rgba(16, 55, 22, 0.75);
+    color: rgb(255, 255, 255);
+    border: solid rgb(255, 255, 255);
+    border-bottom: 5px solid rgb(255, 255, 255);
 }
 
 .footer {
@@ -85,17 +97,17 @@ body {
 }
 
 .circulo {
-    background: rgb(221, 221, 221);
+    background: rgb(225, 225, 225);
     border-radius: 10px;
     width: 38px;
     height: 38px;
     text-align: center;
     font-size: 18px;
-    color: rgb(32, 32, 32);
+    color: rgb(16, 55, 22);
 }
 
 .circulo:hover {
-    background: rgb(46, 143, 56);
+    background: rgb(16, 55, 22);
     color: rgb(255, 255, 255);
     -webkit-box-shadow: 2px 2px 2px rgba(50, 50, 50, 0.77);
     -moz-box-shadow: 2px 2px 2px rgba(50, 50, 50, 0.77);
@@ -105,7 +117,7 @@ body {
 @media only screen and (max-height: 675px) {
     #userName{
         color: #fff;
-        text-shadow: 0 1px 2px #000;
+        text-shadow: 0 2px 2px #000;
     }
 }
 
