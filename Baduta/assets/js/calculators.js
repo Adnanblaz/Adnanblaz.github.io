@@ -560,7 +560,7 @@
 						bbtb.value = "Berisiko gizi lebih (possible risk of overweight)";}
 				else if ((bb >= sdplus2) && (bb < sdplus3)) {
 						bbtb.value = "Gizi lebih (overweight)";}
-				else if (bb > sdplus3) {
+				else if (bb >= sdplus3) {
 						bbtb.value = "Obesitas (obese)";
 				}
 				
