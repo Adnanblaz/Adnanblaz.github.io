@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head> <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+            <meta name="author" content="" />
+         <meta name="description" content="PENTING"> <!-- Document title -->
+        <title>PENTING | Pencegahan Stunting</title>
+        <!-- Stylesheets & Fonts -->
+                 <!-- Stylesheets & Fonts --> 
+        <link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,800,700,600|Montserrat:400,500,600,700|Raleway:100,300,600,700,800" rel="stylesheet" type="text/css" /> 
+        <link href="assets/css/plugins.css" rel="stylesheet"> 
+        <link href="assets/css/style.css" rel="stylesheet"> 
+        <link href="assets/css/red.css" rel="stylesheet"> 
+        <link href="assets/css/responsive.css" rel="stylesheet"> 
+        <link rel="icon" type="image/ico" href="assets/img/favicon.png" />
+        <!-- Kalkulator Gizi-->
+        <script src="assets/js/calculators.js"></script>
+        <!-- FONT AWESOME -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Wrapper -->
+    <div id="wrapper">
+
+        <!-- Content -->
+        <section id="page-content">
+            <div class="container">
+                <div class="row">
+                   <h3 class="text-center">Cek Status Kesehatan Gizi Balita</h3>
+                   
+<div role="alert" class="text-center alert alert-info alert-dismissible">
+    <strong><i class="fa fa-info-circle "></i> Usia 24-60 Bulan dengan Panjang Badan 65-120cm. Kunjungi puskesmas baros setiap hari kamis untuk konseling gizi.
+</div>
+<div class="col-md-12">
+    <form name="data-awal" iclass="form-horizontal" method="post" action="#" enctype="application/x-www-form-urlencoded">
+        <div class="col-md-4">
+            <div class="panel panel-primary">
+                <div class="panel-heading">MASUKKAN DATA ANTROPOMETRI</div>
+                <div class="panel-body">
+                            <label for="nama"><span>Nama Anak:</span><br></label>
+                                <input type="text" class="form-control" name="nama" id="nama" placeholder="Nama Anak" required>            
+
+                            <label for="namaOrtu"><span>Nama Orang Tua:</span><br></label>
+                                <input type="text" class="form-control" name="namaOrtu" id="namaOrtu" placeholder="Nama Orang Tua" required>   
+
+                            <label for="alamat"><span>Alamat</span><br></label>
+                                <input type="text" class="form-control" name="alamat" id="alamat" placeholder="Alamat Rumah" required>   
+
+                            <label for="umurBulan"><span>Usia (Bulan):</span><br></label>
+                                <input type="text" class="form-control" name="umurBulan" id="umurBulan" placeholder="Umur Anak sampai 24-60 bulan" required>
+
+                            <label for="bb"><span>Berat Badan (kg):</span><br></label>
+                                <input type="text" class="form-control" name="bb" id="bb" placeholder="Berat Badan Anak" required>
+
+                            <label for="tb"><span>Tinggi Badan (cm):</span><br></label>
+                                <input type="text" class="form-control" name="tb" id="tb" placeholder="Tinggi Badan Anak 65cm - 120cm" required>
+
+                            <label>	<span>Jenis Kelamin:</span><br>
+                                <input type="radio" name="jk" id="laki-laki" value="laki-laki"/> Laki-laki</label>
+                                <label>
+                                <input type="radio" name="jk" id="perempuan" value="perempuan"/> Perempuan</label>
+                            <hr>
+                            <button type="submit" class="btn btn-rounded btn-reveal btn-sm" onClick="calculateWHO()">Hitung</button>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-md-8">
+            <fieldset id="hasil">
+                <div class="label_atas">HASIL ANALISIS</div>
+                <div class="form-group">
+                    <label for="bbu"><span>Berat Badan menurut Umur : </span><br>
+                        <input type="text" class="form-control" name="bbu" id="bbu" style="background-color: #F5F7F7">
+                    </label>
+
+                    <label for="tbu"><span>Tinggi Badan menurut Umur:</span>
+                        <input type="text" class="form-control" name="tbu" id="tbu" style="background-color: #F5F7F7">
+                    </label>
+
+                    <label for="bbtb">
+                        <span>Berat Badan menurut Tinggi Badan:</span>
+                        <input type="text" class="form-control" name="bbtb" id="bbtb" style="background-color: #F5F7F7">
+                    </label>
+                    <br><span>REKOMENDASI</span>
+                    <label for="rekombbu">
+                        <span>Berat Badan menurut Umur:</span> 	
+                        <input type="text" class="form-control" name="rekombbu" id="rekombbu" style="background-color: #F5F7F7">
+                    </label>
+
+                    <label for="rekomtbu">
+                        <span>Tinggi Badan menurut Umur:</span>	
+                        <input type="text" class="form-control" name="rekomtbu" id="rekomtbu" style="background-color: #F5F7F7">
+                    </label>
+
+                    <label for="rekombbtb">
+                        <span>Berat Badan menurut Tinggi Badan:</span>
+                        <input type="text" class="form-control" name="rekombbtb" id="rekombbtb" style="background-color: #F5F7F7">
+                    </label>
+
+                    <input type="reset" class="btn btn-rounded btn-reveal btn-sm red" value="Reset" />
+                </div>
+            </fieldset>
+        </div>
+    </form>
+</div>
+                </div>
+            </div>
+        </section>
+        <!-- Footer -->
+        <footer id="footer" class="footer-dark">
+            <div class="copyright-content">
+                <div class="container">
+                    <div class="copyright-text text-center">&copy; 2022 PENTING -  Pencegahan Stunting</div>
+                </div>
+            </div>
+        </footer>        <!-- end: Footer -->
+    </div>
+    <!-- end: Wrapper -->
+
+
+
+        <!-- Go to top button -->
+    <a id="goToTop"><i class="fa fa-angle-up top-icon"></i><!--Plugins-->
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/plugins.js"></script>
+
+    <!--Template functions-->
+    <script src="assets/js/functions.js"></script>
+
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbxp-t3l9nzTGHMvOkP0qtO6KFz_XpxmKC-O_1J-7C3AOoL3ZlAQJLgI1jIZ5rO4q9s1HQ/exec'
+        const form = document.forms['data-awal']
+      
+        form.addEventListener('submit', e => {
+          e.preventDefault()
+          fetch(scriptURL, { method: 'POST', body: new FormData(form)})
+            .then(response => console.log('Success!', response))
+            .catch(error => console.error('Error!', error.message))
+        })
+      </script>
+
+</body>
+
+</html>
