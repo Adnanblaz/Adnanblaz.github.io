@@ -1,0 +1,123 @@
+/* Style Settings */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital@1&display=swap');
+
+:root {
+    --font: 'Exo 2', sans-serif;
+}
+
+body {
+    background-color: rgb(243, 242, 242);
+    background-image: url("../images/bg2.jpg");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: top;
+    background-size: cover;
+}
+
+#userPhoto {
+    width: 125px;
+    height: 125px;
+    display: block;
+    margin: 35px auto 20px;
+    border-radius: 50%;
+}
+
+#userName {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: rgb(255, 255, 255);
+    display: block;
+    font-family: var(--font);
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
+#SocialLogo {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+    font-family: var(--font);
+    color: rgb(255, 255, 255);
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
+#FooterText {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+    font-family: var(--font);
+    color: rgb(255, 255, 255);
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
+#links {
+    max-width: 675px;
+    width: auto;
+    display: block;
+    margin: 27px auto;
+}
+
+.link {
+    color: rgb(16, 55, 22);
+    display: block;
+    background-color: rgb(255, 255, 255);
+    font-family: var(--font);
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 17px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all .25s cubic-bezier(.08, .59, .29, .99);
+    border: solid var(--accentColor) 2px;
+    border-radius: 10px;
+}
+
+.link:hover {
+    background-color: rgba(3, 29, 85, 0.75);
+    color: rgb(255, 255, 255);
+    border: solid rgb(255, 255, 255);
+    border-bottom: 5px solid rgb(255, 255, 255);
+}
+
+.footer {
+    text-align: center;
+    font-size: 1.3rem;
+}
+
+.footer a {
+    text-decoration:none;
+    box-shadow: 0 4px 10px #000;
+}
+
+.circulo {
+    background: rgb(225, 225, 225);
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    text-align: center;
+    font-size: 18px;
+    color: rgb(16, 55, 22);
+}
+
+.circulo:hover {
+    background: rgba(16, 55, 22, 0.75);
+    color: rgb(255, 255, 255);
+    -webkit-box-shadow: 2px 2px 2px rgba(50, 50, 50, 0.77);
+    -moz-box-shadow: 2px 2px 2px rgba(50, 50, 50, 0.77);
+    box-shadow: 2px 2px 2px rgba(50, 50, 50, 0.77);
+}
+
+@media only screen and (max-height: 675px) {
+    #userName{
+        color: #fff;
+        text-shadow: 0 2px 2px #000;
+    }
+}
+
