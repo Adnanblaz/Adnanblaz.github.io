@@ -1,7 +1,2 @@
-1.5
-http://adnanblaz.my.id/aksara/file/AKSARA-RAPOR-V.1.5.xlsm?download=1
-+ Progress Bar sudah diperbarui, jadi tidak terlalu berat
-+ TP sudah diperbaiki
-+ Beberapa Teks yang di Rapor Akhir sudah diperbarui
-+ Mata Pelajaran Rapor otomatis menyesuaikan yang ada di data utama
-+ Aplikasi lebih ringan
+1.5.1
+http://adnanblaz.my.id/aksara/file/AKSARA-RAPOR-V.1.5.1.xlsm
