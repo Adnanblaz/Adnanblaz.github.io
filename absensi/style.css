@@ -189,3 +189,41 @@ tr:nth-child(even) {
     box-shadow: 0 3px 8px rgba(0, 86, 179, 0.3);
     transform: translateY(-2px);
 }
+/* === Tambahkan kode ini di paling bawah file style.css === */
+
+/* Penyesuaian untuk layar kecil (HP) dengan lebar maks 600px */
+@media (max-width: 600px) {
+    
+    /* Perkecil padding dan font di dalam tabel agar lebih hemat ruang */
+    th, td {
+        padding: 10px 8px;
+        font-size: 0.9em; 
+    }
+
+    /* Ini adalah perintah kunci untuk memaksa teks turun baris */
+    td {
+        word-break: break-word;
+        hyphens: auto;
+    }
+
+    /* Atur lebar kolom di tabel rekap guru agar lebih efisien */
+    .table-wrapper table th:nth-child(1), /* Kolom No. */
+    .table-wrapper table td:nth-child(1) {
+        width: 10%;
+    }
+
+    .table-wrapper table th:nth-child(2), /* Kolom Nama Siswa */
+    .table-wrapper table td:nth-child(2) {
+        width: 45%; /* Sisakan ruang terbanyak untuk nama */
+    }
+
+    .table-wrapper table th:nth-child(3), /* Kolom Sakit */
+    .table-wrapper table td:nth-child(3),
+    .table-wrapper table th:nth-child(4), /* Kolom Izin */
+    .table-wrapper table td:nth-child(4),
+    .table-wrapper table th:nth-child(5), /* Kolom Tanpa Ket. */
+    .table-wrapper table td:nth-child(5) {
+        width: 15%; /* Beri lebar yang sama untuk kolom angka */
+        text-align: center; /* Pusatkan angka agar rapi */
+    }
+}

@@ -5,13 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Guru & Staf</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         /* CSS tambahan khusus untuk halaman ini */
         .class-filters { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
         .class-filter-btn { background-color: #6c757d; padding: 8px 12px; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .class-filter-btn.active { background-color: var(--primary-color); font-weight: bold; }
+        .class-filter-btn.active { background-color: #007bff; font-weight: bold; }
         .class-table { display: none; }
         .class-table.active { display: block; }
+        .student-name { cursor: pointer; color: #007bff; font-weight: bold; }
+        .student-name:hover { text-decoration: underline; }
+        .details-row { background-color: #f8f9fa !important; }
+        .details-content { padding: 15px; }
+        .detail-table { width: 100%; margin-top: 10px; }
+        .detail-table th, .detail-table td { background-color: #fff; text-align: left; }
     </style>
 </head>
 <body>
@@ -31,7 +39,67 @@
     </div>
     
 <script>
-    // Fungsi untuk menampilkan detail siswa
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
+
+    // FUNGSI BARU & DIPERBAIKI UNTUK EDIT, SIMPAN, DAN BATAL
+    function toggleEditMode(uniqueId, currentStatus) {
+        const row = document.getElementById(`row-${uniqueId}`);
+        const statusCell = row.querySelector('.status-cell');
+        const actionCell = row.querySelector('.action-cell');
+
+        // Simpan status awal untuk fungsi batal
+        row.dataset.originalStatus = currentStatus;
+
+        statusCell.innerHTML = `
+            <select id="select-${uniqueId}" class="form-control form-control-sm" style="width: auto;">
+                <option value="Sakit" ${currentStatus === 'Sakit' ? 'selected' : ''}>Sakit</option>
+                <option value="Izin" ${currentStatus === 'Izin' ? 'selected' : ''}>Izin</option>
+                <option value="Tanpa Keterangan" ${currentStatus === 'Tanpa Keterangan' ? 'selected' : ''}>Tanpa Keterangan</option>
+            </select>
+        `;
+        // Ganti tombol dengan ikon Simpan dan Batal
+        actionCell.innerHTML = `
+            <button onclick="saveEdit('${uniqueId}')" class="btn btn-success btn-sm" title="Simpan"><i class="fas fa-save"></i></button>
+            <button onclick="cancelEdit('${uniqueId}')" class="btn btn-secondary btn-sm" title="Batal"><i class="fas fa-times"></i></button>
+        `;
+    }
+
+    function cancelEdit(uniqueId) {
+        const row = document.getElementById(`row-${uniqueId}`);
+        const statusCell = row.querySelector('.status-cell');
+        const actionCell = row.querySelector('.action-cell');
+        // Ambil kembali status asli yang kita simpan
+        const originalStatus = row.dataset.originalStatus;
+
+        // Kembalikan teks status seperti semula
+        statusCell.textContent = originalStatus;
+        // Kembalikan tombol Edit seperti semula
+        actionCell.innerHTML = `<button onclick="toggleEditMode('${uniqueId}', '${originalStatus}')" class="btn btn-warning btn-sm" title="Edit"><i class="fas fa-edit"></i></button>`;
+    }
+
+    function saveEdit(uniqueId) {
+        const newStatus = document.getElementById(`select-${uniqueId}`).value;
+        const actionCell = document.getElementById(`row-${uniqueId}`).querySelector('.action-cell');
+        actionCell.innerHTML = 'Menyimpan...';
+
+        fetch(webAppUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ id: uniqueId, newStatus: newStatus }),
+        })
+        .then(() => {
+             alert('Perubahan berhasil diproses! Halaman akan dimuat ulang untuk sinkronisasi data.');
+             location.reload();
+        })
+        .catch(error => {
+            alert('Gagal menyimpan perubahan. Silakan coba lagi.');
+            console.error('Error:', error);
+            // Jika gagal, kembalikan ke mode edit awal
+            cancelEdit(uniqueId);
+        });
+    }
+
+    // FUNGSI LAMA ANDA (TIDAK PERLU DIUBAH)
     function toggleDetails(nisn) {
         const detailRow = document.getElementById(`detail-${nisn}`);
         if (detailRow) {
@@ -39,7 +107,6 @@
         }
     }
 
-    // Fungsi untuk filter kelas (untuk superuser)
     function showClass(className) {
         document.querySelectorAll('.class-table').forEach(div => div.classList.remove('active'));
         document.getElementById(className).classList.add('active');
@@ -54,8 +121,6 @@
         const hasilDiv = document.getElementById('hasil');
         const loadingDiv = document.getElementById('loading');
         
-        const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
-        
         hasilDiv.innerHTML = '';
         loadingDiv.style.display = 'block';
         
@@ -68,22 +133,17 @@
                     return;
                 }
 
-                // Cek apakah data untuk wali kelas (array) atau superuser (object)
                 if (Array.isArray(data)) {
-                    // Tampilan untuk WALI KELAS BIASA
                     renderTable(data, hasilDiv, 'Rekap Total Kehadiran Kelas');
                 } else {
-                    // Tampilan untuk SUPERUSER (Kepsek/Operator)
                     let superUserHtml = '<div class="class-filters">';
-                    const kelasKeys = Object.keys(data).sort(); // Urutkan nama kelas
+                    const kelasKeys = Object.keys(data).sort();
                     
-                    // Buat tombol filter untuk setiap kelas
                     kelasKeys.forEach((kelas, index) => {
                         superUserHtml += `<button class="class-filter-btn ${index === 0 ? 'active' : ''}" onclick="showClass('kelas-${kelas.replace(/\s+/g, '')}')">${kelas}</button>`;
                     });
                     superUserHtml += '</div>';
 
-                    // Buat tabel untuk setiap kelas
                     kelasKeys.forEach((kelas, index) => {
                         const tableContainer = document.createElement('div');
                         tableContainer.id = `kelas-${kelas.replace(/\s+/g, '')}`;
@@ -94,26 +154,43 @@
                     hasilDiv.innerHTML = superUserHtml;
                 }
             })
-            .catch(error => { /* handle error */ });
+            .catch(error => { console.error("Fetch Error:", error); });
     });
 
-    // Fungsi bantuan untuk membuat tabel (agar tidak duplikat kode)
+    // FUNGSI renderTable YANG DIPERBARUI DENGAN TOMBOL IKON
     function renderTable(dataSiswa, container, title) {
         if (dataSiswa.length === 0) {
             container.innerHTML = `<p>Tidak ada siswa aktif yang terdaftar di kelas ini.</p>`;
             return;
         }
 
-        let tableHtml = `<div class="table-wrapper"><h3>${title}</h3><p>Klik pada nama siswa untuk melihat rincian tanggal.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr></thead><tbody>`;
+        let tableHtml = `<div class="table-wrapper"><h3>${title}</h3><p>Klik pada nama siswa untuk melihat rincian tanggal dan melakukan koreksi.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Alfa</th></tr></thead><tbody>`;
         
-        dataSiswa.forEach(siswa => {
-            tableHtml += `<tr><td>${siswa.nomorAbsen}</td><td><span class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</span></td><td>${siswa.total.sakit}</td><td>${siswa.total.izin}</td><td>${siswa.total.alpha}</td></tr>`;
+        dataSiswa.sort((a,b) => a.nomorAbsen - b.nomorAbsen).forEach(siswa => {
+            tableHtml += `<tr>
+                            <td>${siswa.nomorAbsen}</td>
+                            <td><span class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</span></td>
+                            <td>${siswa.total.sakit}</td>
+                            <td>${siswa.total.izin}</td>
+                            <td>${siswa.total.alpha}</td>
+                          </tr>`;
             
             let detailContent = '';
-            if (siswa.rincian.sakit.length > 0) detailContent += `<h4>Sakit:</h4><ul>${siswa.rincian.sakit.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-            if (siswa.rincian.izin.length > 0) detailContent += `<h4>Izin:</h4><ul>${siswa.rincian.izin.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-            if (siswa.rincian.alpha.length > 0) detailContent += `<h4>Tanpa Keterangan:</h4><ul>${siswa.rincian.alpha.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-            if(detailContent === '') detailContent = 'Tidak ada catatan ketidakhadiran.';
+            if (siswa.detailUntukEdit.length > 0) {
+                detailContent += '<table class="detail-table"><thead><tr><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>';
+                siswa.detailUntukEdit.sort((a,b) => new Date(b.uniqueId.split('-')[0]) - new Date(a.uniqueId.split('-')[0]));
+                
+                siswa.detailUntukEdit.forEach(d => {
+                    detailContent += `<tr id="row-${d.uniqueId}">
+                                        <td>${d.tanggal}</td>
+                                        <td class="status-cell">${d.status}</td>
+                                        <td class="action-cell"><button onclick="toggleEditMode('${d.uniqueId}', '${d.status}')" class="btn btn-warning btn-sm" title="Edit"><i class="fas fa-edit"></i></button></td>
+                                      </tr>`;
+                });
+                detailContent += '</tbody></table>';
+            } else {
+                detailContent = 'Tidak ada catatan ketidakhadiran untuk dikoreksi.';
+            }
 
             tableHtml += `<tr id="detail-${siswa.nisn}" class="details-row" style="display: none;"><td colspan="5"><div class="details-content">${detailContent}</div></td></tr>`;
         });
