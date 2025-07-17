@@ -72,6 +72,7 @@ p {
 /* Formulir */
 form {
     text-align: left;
+    margin-bottom: 25px; /*<-- Tambahkan baris ini */
 }
 label {
     display: block;
@@ -187,9 +188,4 @@ tr:nth-child(even) {
     font-weight: bold;
     box-shadow: 0 3px 8px rgba(0, 86, 179, 0.3);
     transform: translateY(-2px);
-}
-
-/* Memberi jarak antara Form Login dengan Hasil Rekap */
-#hasil {
-    margin-top: 25px; 
 }
