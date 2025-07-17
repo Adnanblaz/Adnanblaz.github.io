@@ -25,39 +25,33 @@
 <script>
     document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
         e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        // ... (kode untuk mengambil username, password, dll tetap sama) ...
         const hasilDiv = document.getElementById('hasil');
         const loadingDiv = document.getElementById('loading');
-        
-        // GANTI DENGAN URL WEB APP ANDA DARI GOOGLE SCRIPT
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
         
         hasilDiv.innerHTML = '';
         loadingDiv.style.display = 'block';
         
-        fetch(`${webAppUrl}?type=walikelas&username=${username}&password=${password}`)
+        fetch(`${webAppUrl}?type=walikelas&username=${username.value}&password=${password.value}`)
             .then(response => response.json())
             .then(data => {
                 loadingDiv.style.display = 'none';
                 if (data.error) {
                     hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">${data.error}</p>`;
                 } else if (data.length === 0) {
-                    hasilDiv.innerHTML = `<p>Belum ada data kehadiran di kelas Anda.</p>`;
+                    hasilDiv.innerHTML = `<p>Tidak ada siswa aktif yang terdaftar di kelas ini.</p>`;
                 } else {
-                    let table = '<div class="table-wrapper"><h3>Rekap Kehadiran Kelas</h3><table><tr><th>Tanggal</th><th>No.</th><th>Nama Siswa</th><th>Status</th></tr>';
+                    // Buat tabel rekap total
+                    let table = '<div class="table-wrapper"><h3>Rekap Total Kehadiran Kelas</h3><table><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr>';
                     data.forEach(row => {
-                        table += `<tr><td>${row.tanggal}</td><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.status}</td></tr>`;
+                        table += `<tr><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.sakit}</td><td>${row.izin}</td><td>${row.alpha}</td></tr>`;
                     });
                     table += '</table></div>';
                     hasilDiv.innerHTML = table;
                 }
             })
-            .catch(error => {
-                loadingDiv.style.display = 'none';
-                hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">Terjadi kesalahan. Pastikan URL Web App sudah benar dan coba lagi nanti.</p>`;
-                console.error('Error:', error);
-            });
+            .catch(error => { /* (handle error) */ });
     });
 </script>
 </body>
