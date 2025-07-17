@@ -1,0 +1,30 @@
+<body>
+    <h2>Portal Pengecekan Kehadiran Siswa</h2>
+    <form id="cekForm">
+        <label for="nisn">Nomor Induk Siswa Nasional (NISN):</label>
+        <input type="text" id="nisn" required>
+
+        <label for="tglLahir">Tanggal Lahir (Format: MM-DD-YYYY):</label>
+        <input type="text" id="tglLahir" placeholder="Contoh: 07-15-2010" required>
+
+        <button type="submit">Cek Kehadiran</button>
+    </form>
+    <div id="loading" style="display:none;">Mencari data...</div>
+    <div id="hasil"></div>
+
+<script>
+    document.getElementById('cekForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const nisn = document.getElementById('nisn').value;
+        const tglLahir = document.getElementById('tglLahir').value;
+        // ... (sisa kode untuk menampilkan hasil tetap sama) ...
+
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
+
+        fetch(`${webAppUrl}?type=ortu&nisn=${nisn}&tglLahir=${tglLahir}`)
+            .then(response => response.json())
+            // ... (sisa kode .then dan .catch tetap sama) ...
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<script>
+    document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const hasilDiv = document.getElementById('hasil');
+        const loadingDiv = document.getElementById('loading');
+        
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
+        
+        hasilDiv.innerHTML = '';
+        loadingDiv.style.display = 'block';
+        
+        fetch(`${webAppUrl}?type=walikelas&username=${username}&password=${password}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                if (data.error) {
+                    hasilDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+                } else if (data.length === 0) {
+                    hasilDiv.innerHTML = `<p>Belum ada data kehadiran di kelas Anda.</p>`;
+                } else {
+                    // Tambah header kolom "No."
+                    let table = '<h3>Rekap Kehadiran Kelas</h3><table><tr><th>Tanggal</th><th>No.</th><th>Nama Siswa</th><th>Status</th></tr>';
+                    data.forEach(row => {
+                        // Tambah sel untuk menampilkan nomorAbsen
+                        table += `<tr><td>${row.tanggal}</td><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.status}</td></tr>`;
+                    });
+                    table += '</table>';
+                    hasilDiv.innerHTML = table;
+                }
+            })
+            .catch(error => { /* (handle error) */ });
+    });
+</script>
