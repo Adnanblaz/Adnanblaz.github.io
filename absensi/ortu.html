@@ -1,35 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Orang Tua</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; Kembali ke Halaman Utama</a>
+        <h2>Cek Kehadiran Siswa</h2>
+        <form id="cekForm">
+            <label for="nisn">Nomor Induk Siswa Nasional (NISN):</label>
+            <input type="text" id="nisn" required>
+            
+            <label for="tglLahir">Tanggal Lahir (Format: MM-DD-YYYY):</label>
+            <input type="text" id="tglLahir" placeholder="Contoh: 07-15-2010" required>
+            
+            <button type="submit" class="btn btn-primary">Cek Kehadiran</button>
+        </form>
+        
+        <div id="loading" style="display:none;">Mencari data...</div>
+        <div id="hasil"></div>
+    </div>
+
 <script>
-    document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
+    document.getElementById('cekForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        
+        const nisn = document.getElementById('nisn').value;
+        const tglLahir = document.getElementById('tglLahir').value;
         const hasilDiv = document.getElementById('hasil');
         const loadingDiv = document.getElementById('loading');
         
+        // GANTI DENGAN URL WEB APP ANDA DARI GOOGLE SCRIPT
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
         
         hasilDiv.innerHTML = '';
         loadingDiv.style.display = 'block';
         
-        fetch(`${webAppUrl}?type=walikelas&username=${username}&password=${password}`)
+        fetch(`${webAppUrl}?type=ortu&nisn=${nisn}&tglLahir=${tglLahir}`)
             .then(response => response.json())
             .then(data => {
                 loadingDiv.style.display = 'none';
                 if (data.error) {
-                    hasilDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+                    hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">${data.error}</p>`;
                 } else if (data.length === 0) {
-                    hasilDiv.innerHTML = `<p>Belum ada data kehadiran di kelas Anda.</p>`;
+                    hasilDiv.innerHTML = `<p>Belum ada data kehadiran yang tercatat untuk siswa ini.</p>`;
                 } else {
-                    // Tambah header kolom "No."
-                    let table = '<h3>Rekap Kehadiran Kelas</h3><table><tr><th>Tanggal</th><th>No.</th><th>Nama Siswa</th><th>Status</th></tr>';
+                    let table = '<div class="table-wrapper"><h3>Rekap Kehadiran</h3><table><tr><th>Tanggal</th><th>Status</th></tr>';
                     data.forEach(row => {
-                        // Tambah sel untuk menampilkan nomorAbsen
-                        table += `<tr><td>${row.tanggal}</td><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.status}</td></tr>`;
+                        table += `<tr><td>${row.tanggal}</td><td>${row.status}</td></tr>`;
                     });
-                    table += '</table>';
+                    table += '</table></div>';
                     hasilDiv.innerHTML = table;
                 }
             })
-            .catch(error => { /* (handle error) */ });
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">Terjadi kesalahan. Pastikan URL Web App sudah benar dan coba lagi nanti.</p>`;
+                console.error('Error:', error);
+            });
     });
 </script>
+</body>
+</html>

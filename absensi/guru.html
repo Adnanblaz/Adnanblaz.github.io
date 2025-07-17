@@ -1,29 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Wali Kelas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-    <h2>Portal Pengecekan Kehadiran Siswa</h2>
-    <form id="cekForm">
-        <label for="nisn">Nomor Induk Siswa Nasional (NISN):</label>
-        <input type="text" id="nisn" required>
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; Kembali ke Halaman Utama</a>
+        <h2>Portal Rekap Wali Kelas</h2>
+        <form id="cekFormGuru">
+            <label for="username">Username:</label>
+            <input type="text" id="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" required>
+            <button type="submit" class="btn btn-primary">Login & Lihat Rekap</button>
+        </form>
 
-        <label for="tglLahir">Tanggal Lahir (Format: MM-DD-YYYY):</label>
-        <input type="text" id="tglLahir" placeholder="Contoh: 07-15-2010" required>
-
-        <button type="submit">Cek Kehadiran</button>
-    </form>
-    <div id="loading" style="display:none;">Mencari data...</div>
-    <div id="hasil"></div>
-
+        <div id="loading" style="display:none;">Memuat data kelas...</div>
+        <div id="hasil"></div>
+    </div>
+    
 <script>
-    document.getElementById('cekForm').addEventListener('submit', function(e) {
+    document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
         e.preventDefault();
-        const nisn = document.getElementById('nisn').value;
-        const tglLahir = document.getElementById('tglLahir').value;
-        // ... (sisa kode untuk menampilkan hasil tetap sama) ...
-
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const hasilDiv = document.getElementById('hasil');
+        const loadingDiv = document.getElementById('loading');
+        
+        // GANTI DENGAN URL WEB APP ANDA DARI GOOGLE SCRIPT
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
-
-        fetch(`${webAppUrl}?type=ortu&nisn=${nisn}&tglLahir=${tglLahir}`)
+        
+        hasilDiv.innerHTML = '';
+        loadingDiv.style.display = 'block';
+        
+        fetch(`${webAppUrl}?type=walikelas&username=${username}&password=${password}`)
             .then(response => response.json())
-            // ... (sisa kode .then dan .catch tetap sama) ...
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                if (data.error) {
+                    hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">${data.error}</p>`;
+                } else if (data.length === 0) {
+                    hasilDiv.innerHTML = `<p>Belum ada data kehadiran di kelas Anda.</p>`;
+                } else {
+                    let table = '<div class="table-wrapper"><h3>Rekap Kehadiran Kelas</h3><table><tr><th>Tanggal</th><th>No.</th><th>Nama Siswa</th><th>Status</th></tr>';
+                    data.forEach(row => {
+                        table += `<tr><td>${row.tanggal}</td><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.status}</td></tr>`;
+                    });
+                    table += '</table></div>';
+                    hasilDiv.innerHTML = table;
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">Terjadi kesalahan. Pastikan URL Web App sudah benar dan coba lagi nanti.</p>`;
+                console.error('Error:', error);
+            });
     });
 </script>
 </body>
