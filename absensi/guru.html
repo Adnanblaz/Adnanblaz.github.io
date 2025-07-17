@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Wali Kelas</title>
+    <title>Portal Guru & Staf</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSS tambahan khusus untuk halaman ini */
+        .class-filters { margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .class-filter-btn { background-color: #6c757d; padding: 8px 12px; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .class-filter-btn.active { background-color: var(--primary-color); font-weight: bold; }
+        .class-table { display: none; }
+        .class-table.active { display: block; }
+    </style>
 </head>
 <body>
     <div class="container">
         <a href="index.html" class="back-link">&larr; Kembali ke Halaman Utama</a>
-        <h2>Portal Rekap Wali Kelas</h2>
+        <h2>Portal Guru & Staf Sekolah</h2>
         <form id="cekFormGuru">
             <label for="username">Username:</label>
             <input type="text" id="username" required>
@@ -18,17 +26,25 @@
             <button type="submit" class="btn btn-primary">Login & Lihat Rekap</button>
         </form>
 
-        <div id="loading" style="display:none;">Memuat data kelas...</div>
+        <div id="loading" style="display:none;">Memuat data...</div>
         <div id="hasil"></div>
     </div>
     
 <script>
-    // Fungsi untuk menampilkan/menyembunyikan detail
+    // Fungsi untuk menampilkan detail siswa
     function toggleDetails(nisn) {
         const detailRow = document.getElementById(`detail-${nisn}`);
         if (detailRow) {
             detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
         }
+    }
+
+    // Fungsi untuk filter kelas (untuk superuser)
+    function showClass(className) {
+        document.querySelectorAll('.class-table').forEach(div => div.classList.remove('active'));
+        document.getElementById(className).classList.add('active');
+        document.querySelectorAll('.class-filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
     }
 
     document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
@@ -38,7 +54,6 @@
         const hasilDiv = document.getElementById('hasil');
         const loadingDiv = document.getElementById('loading');
         
-        // GANTI DENGAN URL WEB APP ANDA
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
         
         hasilDiv.innerHTML = '';
@@ -50,51 +65,62 @@
                 loadingDiv.style.display = 'none';
                 if (data.error) {
                     hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">${data.error}</p>`;
-                } else if (data.length === 0) {
-                    hasilDiv.innerHTML = `<p>Tidak ada siswa aktif yang terdaftar di kelas ini.</p>`;
+                    return;
+                }
+
+                // Cek apakah data untuk wali kelas (array) atau superuser (object)
+                if (Array.isArray(data)) {
+                    // Tampilan untuk WALI KELAS BIASA
+                    renderTable(data, hasilDiv, 'Rekap Total Kehadiran Kelas');
                 } else {
-                    let tableHtml = '<div class="table-wrapper"><h3>Rekap Total Kehadiran Kelas</h3><p>Klik pada nama siswa untuk melihat rincian tanggal.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr></thead><tbody>';
+                    // Tampilan untuk SUPERUSER (Kepsek/Operator)
+                    let superUserHtml = '<div class="class-filters">';
+                    const kelasKeys = Object.keys(data).sort(); // Urutkan nama kelas
                     
-                    data.forEach(siswa => {
-                        // Baris utama dengan total
-                        tableHtml += `<tr>
-                                        <td>${siswa.nomorAbsen}</td>
-                                        <td><a href="#" class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</a></td>
-                                        <td>${siswa.total.sakit}</td>
-                                        <td>${siswa.total.izin}</td>
-                                        <td>${siswa.total.alpha}</td>
-                                      </tr>`;
-
-                        // Baris tersembunyi untuk detail
-                        let detailContent = '';
-                        if (siswa.rincian.sakit.length > 0) {
-                            detailContent += `<h4>Sakit:</h4><ul>${siswa.rincian.sakit.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-                        }
-                        if (siswa.rincian.izin.length > 0) {
-                            detailContent += `<h4>Izin:</h4><ul>${siswa.rincian.izin.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-                        }
-                        if (siswa.rincian.alpha.length > 0) {
-                            detailContent += `<h4>Tanpa Keterangan:</h4><ul>${siswa.rincian.alpha.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
-                        }
-                        
-                        if(detailContent === '') {
-                            detailContent = 'Tidak ada catatan ketidakhadiran.';
-                        }
-
-                        tableHtml += `<tr id="detail-${siswa.nisn}" class="details-row" style="display: none;">
-                                        <td colspan="5"><div class="details-content">${detailContent}</div></td>
-                                      </tr>`;
+                    // Buat tombol filter untuk setiap kelas
+                    kelasKeys.forEach((kelas, index) => {
+                        superUserHtml += `<button class="class-filter-btn ${index === 0 ? 'active' : ''}" onclick="showClass('kelas-${kelas.replace(/\s+/g, '')}')">${kelas}</button>`;
                     });
+                    superUserHtml += '</div>';
 
-                    tableHtml += '</tbody></table></div>';
-                    hasilDiv.innerHTML = tableHtml;
+                    // Buat tabel untuk setiap kelas
+                    kelasKeys.forEach((kelas, index) => {
+                        const tableContainer = document.createElement('div');
+                        tableContainer.id = `kelas-${kelas.replace(/\s+/g, '')}`;
+                        tableContainer.className = `class-table ${index === 0 ? 'active' : ''}`;
+                        renderTable(data[kelas], tableContainer, `Rekap Kelas: ${kelas}`);
+                        superUserHtml += tableContainer.outerHTML;
+                    });
+                    hasilDiv.innerHTML = superUserHtml;
                 }
             })
-            .catch(error => {
-                loadingDiv.style.display = 'none';
-                hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">Terjadi kesalahan. Coba lagi nanti.</p>`;
-            });
+            .catch(error => { /* handle error */ });
     });
+
+    // Fungsi bantuan untuk membuat tabel (agar tidak duplikat kode)
+    function renderTable(dataSiswa, container, title) {
+        if (dataSiswa.length === 0) {
+            container.innerHTML = `<p>Tidak ada siswa aktif yang terdaftar di kelas ini.</p>`;
+            return;
+        }
+
+        let tableHtml = `<div class="table-wrapper"><h3>${title}</h3><p>Klik pada nama siswa untuk melihat rincian tanggal.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr></thead><tbody>`;
+        
+        dataSiswa.forEach(siswa => {
+            tableHtml += `<tr><td>${siswa.nomorAbsen}</td><td><span class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</span></td><td>${siswa.total.sakit}</td><td>${siswa.total.izin}</td><td>${siswa.total.alpha}</td></tr>`;
+            
+            let detailContent = '';
+            if (siswa.rincian.sakit.length > 0) detailContent += `<h4>Sakit:</h4><ul>${siswa.rincian.sakit.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+            if (siswa.rincian.izin.length > 0) detailContent += `<h4>Izin:</h4><ul>${siswa.rincian.izin.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+            if (siswa.rincian.alpha.length > 0) detailContent += `<h4>Tanpa Keterangan:</h4><ul>${siswa.rincian.alpha.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+            if(detailContent === '') detailContent = 'Tidak ada catatan ketidakhadiran.';
+
+            tableHtml += `<tr id="detail-${siswa.nisn}" class="details-row" style="display: none;"><td colspan="5"><div class="details-content">${detailContent}</div></td></tr>`;
+        });
+
+        tableHtml += '</tbody></table></div>';
+        container.innerHTML = tableHtml;
+    }
 </script>
 </body>
 </html>
