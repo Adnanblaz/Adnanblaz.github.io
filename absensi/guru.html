@@ -167,13 +167,13 @@
         let tableHtml = `<div class="table-wrapper"><h3>${title}</h3><p>Klik pada nama siswa untuk melihat rincian tanggal dan melakukan koreksi.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Alfa</th></tr></thead><tbody>`;
         
         dataSiswa.sort((a,b) => a.nomorAbsen - b.nomorAbsen).forEach(siswa => {
-            tableHtml += `<tr>
-                            <td>${siswa.nomorAbsen}</td>
-                            <td><span class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</span></td>
-                            <td>${siswa.total.sakit}</td>
-                            <td>${siswa.total.izin}</td>
-                            <td>${siswa.total.alpha}</td>
-                          </tr>`;
+            tableHtml += `<tr onclick="toggleDetails('${siswa.nisn}')" style="cursor: pointer;">
+                                <td>${siswa.nomorAbsen}</td>
+                                <td><span class="student-name">${siswa.nama}</span></td>
+                                <td>${siswa.total.sakit}</td>
+                                <td>${siswa.total.izin}</td>
+                                <td>${siswa.total.alpha}</td>
+                            </tr>`;
             
             let detailContent = '';
             if (siswa.detailUntukEdit.length > 0) {

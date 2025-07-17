@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Absensi Sekolah</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style> body { background-color: #f0f2f5; } .view { display: none; } #loginView { display: block; } </style>
+</head>
+<body>
+  <div class="container mt-3 mb-5">
+    <div id="loginView" class="view card shadow-sm mx-auto" style="max-width: 400px;">
+      <div class="card-body">
+        <h3 class="card-title text-center mb-4">Login Sistem Absensi</h3>
+        <ul class="nav nav-pills nav-fill mb-3" id="pills-tab" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link active" id="pills-guru-tab" data-bs-toggle="pill" data-bs-target="#pills-guru" type="button">Guru</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link" id="pills-siswa-tab" data-bs-toggle="pill" data-bs-target="#pills-siswa" type="button">Siswa</button></li>
+        </ul>
+        <div class="tab-content" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="pills-guru" role="tabpanel">
+            <form id="teacherLoginForm">
+                <div class="mb-3">
+                    <label for="teacherUsername" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="teacherUsername" required>
+                </div>
+                <div class="mb-3">
+                    <label for="teacherPassword" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="teacherPassword" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Login Guru</button>
+                </div>
+            </form>
+        </div>
+          <div class="tab-pane fade" id="pills-siswa" role="tabpanel">
+            <form id="studentLoginForm">
+              <div class="mb-3"><label for="nisn" class="form-label">NISN</label><input type="text" class="form-control" id="nisn" required></div>
+              <div class="mb-3"><label for="password" class="form-label">Password (DDMMYYYY)</label><input type="password" class="form-control" id="password" required></div>
+              <div class="d-grid"><button type="submit" class="btn btn-primary">Login Siswa</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dashboardView" class="view">
+      <nav class="navbar bg-white border rounded-3 mb-3 p-2 shadow-sm">
+        <div class="container-fluid"><span class="navbar-brand mb-0 h1 fs-6" id="welcomeMessage"></span><button class="btn btn-danger btn-sm" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</button></div>
+      </nav>
+      <div class="card shadow-sm"><div class="card-body">
+        <div class="row g-2 text-center" id="mainMenu">
+          <div class="col-6"><button id="showAttendanceBtn" class="btn btn-primary w-100 p-3"><i class="bi bi-qr-code-scan d-block fs-2"></i>Ambil Absen</button></div>
+          <div class="col-6"><button id="showRecapBtn" class="btn btn-success w-100 p-3"><i class="bi bi-card-list d-block fs-2"></i>Lihat Rekap</button></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div id="attendanceView" class="view">
+        <button class="btn btn-secondary mb-3 back-to-dashboard"><i class="bi bi-arrow-left"></i> Kembali</button>
+        <div class="card shadow-sm"><div class="card-body">
+            <h4 class="card-title">Ambil Absensi</h4>
+            <div class="d-grid gap-2 btn-group-lg" role="group">
+                <button id="btn-scan-masuk" class="btn btn-info"><i class="bi bi-box-arrow-in-right"></i> Scan Masuk</button>
+                <button id="btn-scan-pulang" class="btn btn-info"><i class="bi bi-box-arrow-left"></i> Scan Pulang</button>
+                <button id="btn-manual-absen" class="btn btn-warning text-dark"><i class="bi bi-pencil-square"></i> Catat Tidak Hadir</button>
+            </div>
+            <div id="scanner-container" class="mt-3 d-none"><div id="reader" style="width: 100%;"></div></div>
+            <div id="absence-form-container" class="mt-3 d-none">
+                <div class="mb-2"><label for="class-select-manual" class="form-label">Pilih Kelas:</label><select id="class-select-manual" class="form-select"></select></div>
+                <div class="mb-2"><label for="student-select-manual" class="form-label">Pilih Siswa:</label><select id="student-select-manual" class="form-select"></select></div>
+                <div class="mb-2"><label for="reason-select-manual" class="form-label">Pilih Alasan:</label><select id="reason-select-manual" class="form-select"><option value="Sakit">Sakit</option><option value="Izin">Izin</option><option value="Alpha">Alpha</option></select></div>
+                <div class="d-grid"><button id="submit-absence" class="btn btn-primary">Kirim</button></div>
+            </div>
+        </div></div>
+    </div>
+
+<div id="recapView" class="view">
+    <button class="btn btn-secondary mb-3 back-to-dashboard"><i class="bi bi-arrow-left"></i> Kembali</button>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title">Rekapitulasi Absensi</h4>
+
+            <div id="recap-filters" class="row g-2 align-items-end mb-3">
+                <div class="col-md-4"><label for="class-filter" class="form-label">Kelas</label><select id="class-filter" class="form-select"></select></div>
+                <div class="col-md-3"><label for="start-date" class="form-label">Dari</label><input type="date" id="start-date" class="form-control"></div>
+                <div class="col-md-3"><label for="end-date" class="form-label">Sampai</label><input type="date" id="end-date" class="form-control"></div>
+                <div class="col-md-2 d-grid"><button id="apply-filter-btn" class="btn btn-primary">Terapkan</button></div>
+            </div>
+
+            <div id="summary-container" class="table-responsive">
+                <p class="text-muted text-center">Silakan terapkan filter untuk melihat rekap.</p>
+                <table class="table table-hover table-bordered">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Siswa</th>
+                            <th>Kelas</th>
+                            <th>Sakit</th>
+                            <th>Izin</th>
+                            <th>Alpha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body"></tbody>
+                </table>
+            </div>
+
+            <div id="detail-container" class="mt-4 d-none">
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 id="detail-title">Detail Ketidakhadiran</h5>
+                    <button id="back-to-summary-btn" class="btn btn-sm btn-outline-secondary">Kembali ke Ringkasan</button>
+                </div>
+                <div class="table-responsive mt-2">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th>Dicatat Oleh</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+    
+    <div id="studentRecapView" class="view">
+      <nav class="navbar bg-white border rounded-3 mb-3 p-2 shadow-sm">
+        <div class="container-fluid"><span class="navbar-brand mb-0 h1" id="studentWelcomeMessage"></span><button class="btn btn-danger btn-sm" id="studentLogoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</button></div>
+      </nav>
+      <div class="card shadow-sm"><div class="card-body">
+        <h4 class="card-title">Rekap Kehadiran Anda</h4>
+        <div class="table-responsive"><table class="table table-striped table-bordered">
+          <thead><tr><th>Tanggal</th><th>Status</th></tr></thead>
+          <tbody id="student-recap-table-body"></tbody>
+        </table></div>
+      </div></div>
+    </div>
+    
+    <div id="loading-spinner" class="position-fixed top-50 start-50 translate-middle p-3 bg-dark text-white rounded-3 shadow d-none" style="z-index: 1060;">
+        <div class="d-flex align-items-center"><div class="spinner-border me-3" role="status"></div><span>Memproses...</span></div>
+    </div>
+    <div class="modal fade" id="editModal" tabindex="-1">
+      <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Edit Status Kehadiran</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="edit-record-id">
+            <p>Siswa: <strong id="edit-student-name"></strong></p>
+            <p>Tanggal: <strong id="edit-date"></strong></p>
+            <label for="edit-status-select" class="form-label">Ubah Status Menjadi:</label>
+            <select id="edit-status-select" class="form-select">
+                <option value="Masuk">Masuk</option><option value="Pulang">Pulang</option>
+                <option value="Sakit">Sakit</option><option value="Izin">Izin</option><option value="Alpha">Alpha</option>
+            </select>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" id="save-edit-btn">Simpan</button></div>
+      </div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script>
+    let appState = { user: null, classList: [], studentsByClass: {}, html5QrCode: null, editModal: null };
+
+    // INITIALIZATION & VIEWS
+    document.addEventListener('DOMContentLoaded', () => {
+      appState.html5QrCode = new Html5Qrcode("reader");
+      appState.editModal = new bootstrap.Modal(document.getElementById('editModal'));
+      bindEventListeners(); setDefaultDates();
+    });
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+      document.getElementById(viewId).style.display = 'block';
+      if(appState.html5QrCode && appState.html5QrCode.isScanning) { appState.html5QrCode.stop(); }
+    }
+    function showLoading(show) { document.getElementById('loading-spinner').classList.toggle('d-none', !show); }
+
+    // AUTHENTICATION
+    document.getElementById('studentLoginForm').addEventListener('submit', (e) => {
+      e.preventDefault(); showLoading(true);
+      const nisn = document.getElementById('nisn').value;
+      const password = document.getElementById('password').value;
+      google.script.run.withSuccessHandler(onLoginSuccess).withFailureHandler(onLoginFailure).authenticateStudent(nisn, password);
+    });
+    function onLoginSuccess(response) {
+      showLoading(false);
+      if (!response.isAuthorized) { alert('Login Gagal. Periksa kembali data Anda.'); return; }
+      appState.user = response;
+      if(response.role === 'Siswa') { setupStudentView(); } 
+      else { google.script.run.withSuccessHandler(onInitialData).getInitialData(appState.user); }
+    }
+    function onLoginFailure(error) { showLoading(false); alert('Error: ' + error.message); }
+    function logout() { appState = { user: null, classList: [], studentsByClass: {}, html5QrCode: appState.html5QrCode, editModal: appState.editModal }; showView('loginView'); }
+
+    // SETUP AFTER LOGIN
+    function onInitialData(data) {
+      appState = { ...appState, ...data };
+      setupDashboard(); setupAttendanceView(); setupRecapView(); showView('dashboardView');
+    }
+    function setupDashboard() { document.getElementById('welcomeMessage').textContent = `Halo, ${appState.user.name}`; }
+// =================================================================
+// GANTI FUNGSI LAMA DENGAN DUA FUNGSI YANG SUDAH DIPERBAIKI INI
+// =================================================================
+
+function setupStudentView() {
+  document.getElementById('studentWelcomeMessage').textContent = `Halo, ${appState.user.name}`;
+  const today = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  const filters = {
+    role: 'Siswa',
+    nisn: appState.user.nisn,
+    startDate: thirtyDaysAgo.toISOString().split('T')[0],
+    endDate: today.toISOString().split('T')[0]
+  };
+
+  // MEMANGGIL FUNGSI BACKEND YANG BENAR: getStudentDetailLogs
+  google.script.run.withSuccessHandler(renderStudentRecapTable).withFailureHandler(onActionFailure).getStudentDetailLogs(filters);
+  showView('studentRecapView');
+}
+
+function renderStudentRecapTable(result) {
+  const tbody = document.getElementById('student-recap-table-body');
+  tbody.innerHTML = '';
+  if (!result || !result.data || result.data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center">Tidak ada data ketidakhadiran untuk ditampilkan.</td></tr>';
+    return;
+  }
+
+  // Mem-parse data dari getStudentDetailLogs
+  result.data.forEach(row => {
+    const tr = document.createElement('tr');
+    const date = new Date(row[1]).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const status = row[5]; // Kolom status ada di indeks 5
+    tr.innerHTML = `<td>${date}</td><td>${status}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+    // EVENT LISTENERS
+    function bindEventListeners() {
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('studentLogoutBtn').addEventListener('click', logout);
+      document.querySelectorAll('.back-to-dashboard').forEach(btn => btn.addEventListener('click', () => showView('dashboardView')));
+      document.getElementById('showAttendanceBtn').addEventListener('click', () => showView('attendanceView'));
+      document.getElementById('showRecapBtn').addEventListener('click', () => { showView('recapView'); applyRecapFilter(); });
+      document.getElementById('btn-scan-masuk').addEventListener('click', () => startScanner('Masuk'));
+      document.getElementById('btn-scan-pulang').addEventListener('click', () => startScanner('Pulang'));
+      document.getElementById('btn-manual-absen').addEventListener('click', showManualAbsenceForm);
+      document.getElementById('class-select-manual').addEventListener('change', updateManualStudentDropdown);
+      document.getElementById('submit-absence').addEventListener('click', submitManualAbsence);
+      document.getElementById('apply-filter-btn').addEventListener('click', applyRecapFilter);
+      document.getElementById('save-edit-btn').addEventListener('click', saveEdit);
+      document.getElementById('teacherLoginForm').addEventListener('submit', handleTeacherLogin); // TAMBAHKAN INI
+    }
+
+    // TAMBAHKAN FUNGSI BARU INI
+    function handleTeacherLogin(e) {
+      e.preventDefault();
+      showLoading(true);
+      const username = document.getElementById('teacherUsername').value;
+      const password = document.getElementById('teacherPassword').value;
+      google.script.run.withSuccessHandler(onLoginSuccess).withFailureHandler(onLoginFailure).authenticateUser(username, password);
+    }
+    // ATTENDANCE
+    function setupAttendanceView() {
+      const classDropdown = document.getElementById('class-select-manual');
+      classDropdown.innerHTML = '<option value="">Pilih Kelas</option>';
+      appState.classList.forEach(c => classDropdown.innerHTML += `<option value="${c}">${c}</option>`);
+    }
+    function startScanner(status) {
+      document.getElementById('absence-form-container').classList.add('d-none');
+      document.getElementById('scanner-container').classList.remove('d-none');
+      const onScanSuccess = (decodedText, decodedResult) => {
+        appState.html5QrCode.stop().then(() => {
+            showLoading(true);
+            google.script.run.withSuccessHandler(onActionSuccess).withFailureHandler(onActionFailure).processScan(decodedText, status, appState.user);
+        });
+      };
+      appState.html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess, (errorMessage) => {}).catch(err => alert('Gagal memulai kamera.'));
+    }
+    function showManualAbsenceForm() {
+      if(appState.html5QrCode.isScanning) appState.html5QrCode.stop();
+      document.getElementById('scanner-container').classList.add('d-none');
+      document.getElementById('absence-form-container').classList.remove('d-none');
+    }
+    function updateManualStudentDropdown() {
+      const selectedClass = document.getElementById('class-select-manual').value;
+      const studentDropdown = document.getElementById('student-select-manual');
+      studentDropdown.innerHTML = '<option value="">Pilih Siswa</option>';
+      if(selectedClass && appState.studentsByClass[selectedClass]) {
+        appState.studentsByClass[selectedClass].forEach(s => studentDropdown.innerHTML += `<option value="${s.nisn}">${s.no_absen}. ${s.name}</option>`);
+      }
+    }
+    function submitManualAbsence() {
+      const nisn = document.getElementById('student-select-manual').value;
+      const reason = document.getElementById('reason-select-manual').value;
+      if(!nisn) { alert('Silakan pilih siswa.'); return; }
+      showLoading(true);
+      google.script.run.withSuccessHandler(onActionSuccess).withFailureHandler(onActionFailure).recordAbsence(nisn, reason, appState.user);
+    }
+    function onActionSuccess(response) {
+      showLoading(false); alert(response.message);
+      if (response.success) { document.getElementById('absence-form-container').classList.add('d-none'); }
+    }
+    function onActionFailure(error) { showLoading(false); alert('Error: ' + error.message); }
+
+    // RECAP & EDIT
+    function setupRecapView() {
+      const classFilter = document.getElementById('class-filter');
+      classFilter.innerHTML = '<option value="Semua Kelas">Semua Kelas</option>';
+      appState.classList.forEach(c => classFilter.innerHTML += `<option value="${c}">${c}</option>`);
+      if(appState.user.role === 'Wali Kelas') { classFilter.value = appState.user.homeroomClass; classFilter.disabled = true; }
+      else { classFilter.disabled = false; }
+    }
+    function setDefaultDates() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('start-date').value = today; document.getElementById('end-date').value = today;
+    }
+// =================================================================
+// SEMUA LOGIKA BARU UNTUK REKAP & EDIT
+// Taruh ini di dalam <script> untuk menggantikan fungsi rekap lama
+// =================================================================
+
+function applyRecapFilter() {
+  showLoading(true);
+  document.getElementById('detail-container').classList.add('d-none'); // Sembunyikan detail saat filter baru
+  document.getElementById('summary-container').classList.remove('d-none');
+  const filters = {
+    role: appState.user.role,
+    homeroomClass: appState.user.homeroomClass,
+    startDate: document.getElementById('start-date').value,
+    endDate: document.getElementById('end-date').value,
+    classFilter: document.getElementById('class-filter').value
+  };
+  google.script.run.withSuccessHandler(renderSummaryTable).withFailureHandler(onActionFailure).getRecapSummary(filters);
+}
+
+function renderSummaryTable(summaryData) {
+  showLoading(false);
+  const tbody = document.getElementById('summary-table-body');
+  tbody.innerHTML = '';
+  if (summaryData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data untuk ditampilkan.</td></tr>';
+    return;
+  }
+  summaryData.forEach(siswa => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.dataset.nisn = siswa.nisn;
+    tr.dataset.nama = siswa.nama;
+    tr.innerHTML = `
+      <td>${siswa.no_absen}</td>
+      <td>${siswa.nama}</td>
+      <td>${siswa.kelas}</td>
+      <td>${siswa.Sakit}</td>
+      <td>${siswa.Izin}</td>
+      <td>${siswa.Alpha}</td>
+    `;
+    tr.addEventListener('click', handleSummaryRowClick);
+    tbody.appendChild(tr);
+  });
+}
+
+function handleSummaryRowClick(e) {
+  const row = e.currentTarget;
+  const nisn = row.dataset.nisn;
+  const nama = row.dataset.nama;
+
+  showLoading(true);
+  document.getElementById('summary-container').classList.add('d-none');
+  document.getElementById('detail-title').textContent = `Detail Ketidakhadiran: ${nama}`;
+  document.getElementById('detail-container').classList.remove('d-none');
+
+  const filters = {
+    nisn: nisn,
+    startDate: document.getElementById('start-date').value,
+    endDate: document.getElementById('end-date').value
+  };
+  google.script.run.withSuccessHandler(renderDetailTable).withFailureHandler(onActionFailure).getStudentDetailLogs(filters);
+}
+
+function renderDetailTable(result) {
+  showLoading(false);
+  const tbody = document.getElementById('detail-table-body');
+  tbody.innerHTML = '';
+  if (result.data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Siswa ini tidak memiliki catatan ketidakhadiran pada periode ini.</td></tr>';
+    return;
+  }
+
+  const canEdit = ['Admin', 'Kepsek', 'Wali Kelas'].includes(appState.user.role);
+
+  result.data.forEach(row => {
+    const tr = document.createElement('tr');
+    const recordId = row[0];
+    const timestamp = new Date(row[1]).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
+    const status = row[5];
+    const dicatatOleh = row[6];
+
+    let actionButton = '';
+    if (canEdit) {
+        // Wali kelas hanya bisa edit kelasnya sendiri
+        const canWaliKelasEdit = (appState.user.role === 'Wali Kelas' && row[4] === appState.user.homeroomClass);
+        if (appState.user.role === 'Admin' || appState.user.role === 'Kepsek' || canWaliKelasEdit) {
+             actionButton = `<button class="btn btn-warning btn-sm edit-btn" data-id="${recordId}" data-nama="${row[3]}" data-tanggal="${timestamp}" data-status="${status}"><i class="bi bi-pencil"></i></button>`;
+        }
+    }
+
+    tr.innerHTML = `
+      <td>${timestamp}</td>
+      <td>${status}</td>
+      <td>${dicatatOleh}</td>
+      <td>${actionButton}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditClick));
+}
+
+document.getElementById('back-to-summary-btn').addEventListener('click', () => {
+    document.getElementById('detail-container').classList.add('d-none');
+    document.getElementById('summary-container').classList.remove('d-none');
+});
+
+function handleEditClick(e) {
+  const btn = e.currentTarget;
+  document.getElementById('edit-record-id').value = btn.dataset.id;
+  document.getElementById('edit-student-name').textContent = btn.dataset.nama;
+  document.getElementById('edit-date').textContent = new Date(btn.dataset.tanggal).toLocaleDateString('id-ID');
+  document.getElementById('edit-status-select').value = btn.dataset.status;
+  appState.editModal.show();
+}
+
+function saveEdit() {
+  showLoading(true);
+  const recordId = document.getElementById('edit-record-id').value;
+  const newStatus = document.getElementById('edit-status-select').value;
+  google.script.run.withSuccessHandler(onEditSuccess).withFailureHandler(onActionFailure).updateLogEntry(recordId, newStatus, appState.user);
+}
+
+function onEditSuccess(response) {
+  showLoading(false);
+  appState.editModal.hide();
+  alert(response.message);
+  if(response.success) {
+    // Refresh tabel detail setelah edit berhasil
+    const detailTitle = document.getElementById('detail-title').textContent;
+    const studentName = detailTitle.replace('Detail Ketidakhadiran: ', '');
+    const studentRow = Array.from(document.querySelectorAll('#summary-table-body tr')).find(tr => tr.dataset.nama === studentName);
+    if(studentRow) {
+        handleSummaryRowClick({ currentTarget: studentRow });
+    }
+  }
+}
+  </script>
+</body>
+</html>
