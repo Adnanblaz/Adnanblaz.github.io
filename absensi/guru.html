@@ -23,17 +23,28 @@
     </div>
     
 <script>
+    // Fungsi untuk menampilkan/menyembunyikan detail
+    function toggleDetails(nisn) {
+        const detailRow = document.getElementById(`detail-${nisn}`);
+        if (detailRow) {
+            detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+        }
+    }
+
     document.getElementById('cekFormGuru').addEventListener('submit', function(e) {
         e.preventDefault();
-        // ... (kode untuk mengambil username, password, dll tetap sama) ...
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
         const hasilDiv = document.getElementById('hasil');
         const loadingDiv = document.getElementById('loading');
+        
+        // GANTI DENGAN URL WEB APP ANDA
         const webAppUrl = 'https://script.google.com/macros/s/AKfycbyFcQAJyZUgbxRm9TrmgTWQqNF9jKQ-C5884VxMa-vDefwBwo47Mt1pvddKbmKDZUXP/exec';
         
         hasilDiv.innerHTML = '';
         loadingDiv.style.display = 'block';
         
-        fetch(`${webAppUrl}?type=walikelas&username=${username.value}&password=${password.value}`)
+        fetch(`${webAppUrl}?type=walikelas&username=${username}&password=${password}`)
             .then(response => response.json())
             .then(data => {
                 loadingDiv.style.display = 'none';
@@ -42,16 +53,47 @@
                 } else if (data.length === 0) {
                     hasilDiv.innerHTML = `<p>Tidak ada siswa aktif yang terdaftar di kelas ini.</p>`;
                 } else {
-                    // Buat tabel rekap total
-                    let table = '<div class="table-wrapper"><h3>Rekap Total Kehadiran Kelas</h3><table><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr>';
-                    data.forEach(row => {
-                        table += `<tr><td>${row.nomorAbsen}</td><td>${row.nama}</td><td>${row.sakit}</td><td>${row.izin}</td><td>${row.alpha}</td></tr>`;
+                    let tableHtml = '<div class="table-wrapper"><h3>Rekap Total Kehadiran Kelas</h3><p>Klik pada nama siswa untuk melihat rincian tanggal.</p><table><thead><tr><th>No.</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr></thead><tbody>';
+                    
+                    data.forEach(siswa => {
+                        // Baris utama dengan total
+                        tableHtml += `<tr>
+                                        <td>${siswa.nomorAbsen}</td>
+                                        <td><a href="#" class="student-name" onclick="toggleDetails('${siswa.nisn}')">${siswa.nama}</a></td>
+                                        <td>${siswa.total.sakit}</td>
+                                        <td>${siswa.total.izin}</td>
+                                        <td>${siswa.total.alpha}</td>
+                                      </tr>`;
+
+                        // Baris tersembunyi untuk detail
+                        let detailContent = '';
+                        if (siswa.rincian.sakit.length > 0) {
+                            detailContent += `<h4>Sakit:</h4><ul>${siswa.rincian.sakit.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+                        }
+                        if (siswa.rincian.izin.length > 0) {
+                            detailContent += `<h4>Izin:</h4><ul>${siswa.rincian.izin.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+                        }
+                        if (siswa.rincian.alpha.length > 0) {
+                            detailContent += `<h4>Tanpa Keterangan:</h4><ul>${siswa.rincian.alpha.map(tgl => `<li>${tgl}</li>`).join('')}</ul>`;
+                        }
+                        
+                        if(detailContent === '') {
+                            detailContent = 'Tidak ada catatan ketidakhadiran.';
+                        }
+
+                        tableHtml += `<tr id="detail-${siswa.nisn}" class="details-row" style="display: none;">
+                                        <td colspan="5"><div class="details-content">${detailContent}</div></td>
+                                      </tr>`;
                     });
-                    table += '</table></div>';
-                    hasilDiv.innerHTML = table;
+
+                    tableHtml += '</tbody></table></div>';
+                    hasilDiv.innerHTML = tableHtml;
                 }
             })
-            .catch(error => { /* (handle error) */ });
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                hasilDiv.innerHTML = `<p style="color:red; font-weight:bold;">Terjadi kesalahan. Coba lagi nanti.</p>`;
+            });
     });
 </script>
 </body>

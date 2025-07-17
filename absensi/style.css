@@ -126,3 +126,25 @@ tr:nth-child(even) {
 .back-link:hover {
     text-decoration: underline;
 }
+/* Style untuk detail interaktif di portal guru */
+.student-name {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: bold;
+}
+.details-row {
+    background-color: #fdfdfd;
+}
+.details-content {
+    padding: 15px;
+    text-align: left;
+}
+.details-content h4 {
+    margin-top: 0;
+    color: var(--secondary-color);
+}
+.details-content ul {
+    margin: 0;
+    padding-left: 20px;
+}
