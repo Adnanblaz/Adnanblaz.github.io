@@ -1,0 +1,350 @@
+// =================================================================
+// PENGATURAN UTAMA
+// =================================================================
+const WA_TOKEN = "tuUAWr9BueSmJFjppCic"; // Token Fonnte Anda
+
+// =================================================================
+// FUNGSI PENGIRIM WHATSAPP (DARI KODE ANDA)
+// =================================================================
+function kirimWhatsApp(nomor, pesan) {
+  const apiUrl = "https://api.fonnte.com/send";
+  const payload = { 'target': nomor, 'message': pesan, 'countryCode': '62' };
+  const options = {
+    'method': 'post', 'contentType': 'application/json',
+    'headers': { 'Authorization': WA_TOKEN }, 'payload': JSON.stringify(payload)
+  };
+  try { UrlFetchApp.fetch(apiUrl, options); } catch (e) { Logger.log("Gagal kirim WA: " + e.toString()); }
+}
+
+// =================================================================
+// FUNGSI onFormSubmit UNTUK SCAN QR (DARI KODE ANDA)
+// =================================================================
+function onFormSubmit(e) {
+  const response = e.values;
+  const timestamp = new Date(response[0]);
+  const nisn = response[1].trim();
+  const statusDariForm = response[2].trim();
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dbSiswaSheet = ss.getSheetByName("Database Siswa");
+  let logAbsensiSheet = ss.getSheetByName("Log Absensi");
+
+  if (!logAbsensiSheet) {
+    logAbsensiSheet = ss.insertSheet("Log Absensi");
+    logAbsensiSheet.appendRow(["Timestamp", "NISN", "No. Absen", "Nama Siswa", "Kelas", "Status Kehadiran"]);
+  }
+
+  const dataSiswa = dbSiswaSheet.getDataRange().getValues();
+  let siswaInfo = null;
+  for (let i = 1; i < dataSiswa.length; i++) {
+    if (dataSiswa[i][0].toString().trim() == nisn && dataSiswa[i][7].toString().trim() == "Aktif") {
+      siswaInfo = {
+        nisn: dataSiswa[i][0], nomorAbsen: dataSiswa[i][1], namaSiswa: dataSiswa[i][2],
+        kelas: dataSiswa[i][3], namaOrtu: dataSiswa[i][4], nomorWa: dataSiswa[i][5].toString()
+      };
+      break;
+    }
+  }
+
+  if (!siswaInfo) {
+    Logger.log("Error: NISN " + nisn + " tidak ditemukan atau tidak aktif.");
+    return;
+  }
+  
+  let statusFinal = statusDariForm;
+  if (statusDariForm === "Hadir / Pulang") {
+    const logData = logAbsensiSheet.getDataRange().getValues();
+    const hariIni = timestamp.toLocaleDateString("id-ID");
+    let sudahMasukHariIni = false;
+    for (let i = logData.length - 1; i > 0; i--) {
+      let logTimestamp = new Date(logData[i][0]);
+      if (logTimestamp.toLocaleDateString("id-ID") === hariIni && logData[i][1].toString().trim() === nisn && logData[i][5] === "Masuk") {
+        sudahMasukHariIni = true;
+        break;
+      }
+    }
+    statusFinal = sudahMasukHariIni ? "Pulang" : "Masuk";
+  }
+  
+  let pesanNotifikasi;
+  const waktuScan = timestamp.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+  const infoHariTanggal = timestamp.toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  switch (statusFinal) {
+    case "Masuk": pesanNotifikasi = `✅ *Notifikasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah *hadir* di sekolah pada hari ${infoHariTanggal}.\nTerima kasih atas kerjasamanya Bapak/Ibu.`; break;
+    case "Pulang": pesanNotifikasi = `🏠 *Notifikasi Pulang Sekolah*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah selesai belajar dan *pulang* dari sekolah pada hari ${infoHariTanggal} pukul ${waktuScan}.\nMohon dijemput di sekolah atau ditunggu kepulangannya di rumah.`; break;
+    case "Sakit": pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} tidak masuk sekolah karena *sakit*.\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`; break;
+    case "Izin": pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *izin* yang telah dikonfirmasi kepada wali kelas.`; break;
+    case "Tanpa Keterangan": pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\nKami informasikan bahwa hingga saat ini ${siswaInfo.namaSiswa} kelas ${siswaInfo.kelas} *belum hadir* atau *tidak hadir tanpa keterangan* pada hari ${infoHariTanggal}.\nMohon segera konfirmasi kepada wali kelas atau melalui group kelas. Terima kasih.`; break;
+    default: pesanNotifikasi = `Status kehadiran ananda *${siswaInfo.namaSiswa}* telah dicatat sebagai: *${statusFinal}*.`; break;
+  }
+  
+  logAbsensiSheet.appendRow([timestamp, siswaInfo.nisn, siswaInfo.nomorAbsen, siswaInfo.namaSiswa, siswaInfo.kelas, statusFinal]);
+  kirimWhatsApp(siswaInfo.nomorWa, pesanNotifikasi);
+}
+
+// =================================================================
+// FUNGSI WEB APP (doGet & doPost) - VERSI FINAL DIPERBAIKI
+// =================================================================
+
+// Fungsi pembantu untuk menulis log ke Sheet
+function logToSheet(keterangan, detail = "") {
+  const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Debug Log");
+  if (logSheet) {
+    logSheet.appendRow([new Date(), keterangan, JSON.stringify(detail)]);
+  }
+}
+
+function doGet(e) {
+    try {
+        const params = e.parameter;
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let responseData;
+
+        if (params.action === 'login') {
+            responseData = handleStaffLogin(params, ss);
+        } else if (params.action === 'getRekap') {
+            responseData = handleRekapRequest(params, ss);
+        } else if (params.action === 'getUnscanned') {
+            responseData = handleUnscannedRequest(params, ss);
+        } else if (params.action === 'loginOrtu') {
+            responseData = handleSiswaLogin(params, ss);
+        } else if (params.action === 'getRekapOrtu') {
+            responseData = handleOrtuRekapRequest(params, ss);
+        } else {
+            throw new Error("Aksi tidak valid.");
+        }
+        return ContentService.createTextOutput(JSON.stringify({ status: "success", data: responseData })).setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.message })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+function doPost(e) {
+    try {
+        const data = JSON.parse(e.postData.contents);
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let resultMessage = "";
+
+        if (data.action === 'editSingle') {
+            resultMessage = handleEditSingle(data, ss);
+        } else if (data.action === 'saveUnscanned') {
+            resultMessage = handleSaveUnscanned(data, ss);
+        } else {
+            throw new Error("Aksi POST tidak dikenal.");
+        }
+        return ContentService.createTextOutput(JSON.stringify({ status: "success", message: resultMessage })).setMimeType(ContentService.MimeType.JSON);
+
+    } catch (error) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.message })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+// =================================================================
+// FUNGSI-FUNGSI PEMBANTU
+// =================================================================
+
+function handleStaffLogin(params, ss) {
+    const dbStaffSheet = ss.getSheetByName("Database Staff");
+    if (!dbStaffSheet) throw new Error("Sheet 'Database Staff' tidak ditemukan.");
+    const staffData = dbStaffSheet.getDataRange().getValues();
+    for (let i = 1; i < staffData.length; i++) {
+        if (staffData[i][0].trim().toLowerCase() === params.username.trim().toLowerCase() && staffData[i][1].toString() === params.password) {
+            return {
+                name: staffData[i][2], role: staffData[i][3],
+                canEdit: staffData[i][3] === 'walikelas' || staffData[i][3] === 'admin',
+                kelasDiampu: staffData[i][4] || null
+            };
+        }
+    }
+    throw new Error("Username atau Password salah.");
+}
+
+function handleSiswaLogin(params, ss) {
+    const { nisn, tglLahir } = params;
+    if (!nisn || !tglLahir) throw new Error("NISN dan Tanggal Lahir wajib diisi.");
+    const dbSiswaSheet = ss.getSheetByName("Database Siswa");
+    const dataSiswa = dbSiswaSheet.getDataRange().getValues();
+    for (let i = 1; i < dataSiswa.length; i++) {
+        if (dataSiswa[i][0].toString().trim() == nisn && dataSiswa[i][6].toString().trim() == tglLahir && dataSiswa[i][7] === "Aktif") {
+            return { nama: dataSiswa[i][2], kelas: dataSiswa[i][3] };
+        }
+    }
+    throw new Error("NISN atau Tanggal Lahir salah, atau siswa tidak aktif.");
+}
+
+function handleOrtuRekapRequest(params, ss) {
+    const { nisn, tglLahir, semester } = params;
+    const cache = CacheService.getScriptCache();
+    const cacheKey = `rekap_ortu_${nisn}_sem${semester}`;
+    const cached = cache.get(cacheKey);
+    if (cached != null) { return JSON.parse(cached); }
+
+    let siswaData = handleSiswaLogin({nisn: nisn, tglLahir: tglLahir}, ss);
+    siswaData.total = { sakit: 0, izin: 0, alpha: 0 };
+    siswaData.detail = [];
+
+    const logAbsensiSheet = ss.getSheetByName("Log Absensi");
+    if (!logAbsensiSheet) return siswaData;
+    const logData = logAbsensiSheet.getDataRange().getValues();
+    const startMonth = parseInt(semester) === 1 ? 6 : 0;
+    const endMonth = parseInt(semester) === 1 ? 11 : 5;
+
+    logData.slice(1).forEach(row => {
+        const logNisn = row[1].toString().trim();
+        const logDate = new Date(row[0]);
+        if (logNisn === nisn && logDate.getMonth() >= startMonth && logDate.getMonth() <= endMonth) {
+            const status = row[5];
+            if (status === "Sakit") siswaData.total.sakit++;
+            else if (status === "Izin") siswaData.total.izin++;
+            else if (status === "Tanpa Keterangan") siswaData.total.alpha++;
+            siswaData.detail.push({
+                timestamp: logDate.getTime(),
+                tanggal: logDate.toLocaleString("id-ID", { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                status: status
+            });
+        }
+    });
+    siswaData.detail.sort((a, b) => b.timestamp - a.timestamp);
+    cache.put(cacheKey, JSON.stringify(siswaData), 3600);
+    return siswaData;
+}
+
+function handleRekapRequest(params, ss) {
+    const cache = CacheService.getScriptCache();
+    const cacheKey = `rekap_guru_${params.role}_${params.kelasDiampu || 'all'}_sem${params.semester}`;
+    const cached = cache.get(cacheKey);
+    if (cached != null) { return JSON.parse(cached); }
+
+    const logAbsensiSheet = ss.getSheetByName("Log Absensi");
+    if (!logAbsensiSheet) return [];
+    const logData = logAbsensiSheet.getDataRange().getValues();
+    const dbSiswaSheet = ss.getSheetByName("Database Siswa");
+    const semuaSiswa = dbSiswaSheet.getDataRange().getValues();
+    const semester = parseInt(params.semester);
+    const startMonth = semester === 1 ? 6 : 0;
+    const endMonth = semester === 1 ? 11 : 5;
+    let rekapSiswa = {};
+
+    semuaSiswa.slice(1).forEach(row => {
+        const nisn = row[0].toString().trim();
+        const kelasSiswa = row[3];
+        const statusAktif = row[7];
+        const isTargetClass = (params.role === 'walikelas' && kelasSiswa === params.kelasDiampu) || (params.role !== 'walikelas');
+        if (isTargetClass && statusAktif === "Aktif") {
+            rekapSiswa[nisn] = {
+                nisn: nisn, nomorAbsen: row[1], nama: row[2], kelas: kelasSiswa,
+                total: { sakit: 0, izin: 0, alpha: 0 },
+                detailUntukEdit: []
+            };
+        }
+    });
+
+    logData.slice(1).forEach(row => {
+        const logNisn = row[1].toString().trim();
+        const logDate = new Date(row[0]);
+        const logMonth = logDate.getMonth();
+        const status = row[5];
+        if (rekapSiswa[logNisn] && logMonth >= startMonth && logMonth <= endMonth) {
+            if (status === "Sakit") rekapSiswa[logNisn].total.sakit++;
+            else if (status === "Izin") rekapSiswa[logNisn].total.izin++;
+            else if (status === "Tanpa Keterangan") rekapSiswa[logNisn].total.alpha++;
+            if (["Sakit", "Izin", "Tanpa Keterangan"].includes(status)) {
+                rekapSiswa[logNisn].detailUntukEdit.push({
+                    uniqueId: `${logDate.getTime()}-${logNisn}`,
+                    tanggal: logDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+                    status: status
+                });
+            }
+        }
+    });
+
+    const hasilArray = Object.values(rekapSiswa);
+    let finalResult;
+    if (params.role === 'admin' || params.role === 'mapel') {
+        let groupedByClass = {};
+        hasilArray.forEach(siswa => {
+            if (!groupedByClass[siswa.kelas]) groupedByClass[siswa.kelas] = [];
+            groupedByClass[siswa.kelas].push(siswa);
+        });
+        finalResult = groupedByClass;
+    } else {
+        finalResult = hasilArray;
+    }
+    
+    cache.put(cacheKey, JSON.stringify(finalResult), 3600);
+    return finalResult;
+}
+
+function handleUnscannedRequest(params, ss) {
+    const logAbsensiSheet = ss.getSheetByName("Log Absensi");
+    const dbSiswaSheet = ss.getSheetByName("Database Siswa");
+    const semuaSiswa = dbSiswaSheet.getDataRange().getValues();
+    const logData = logAbsensiSheet ? logAbsensiSheet.getDataRange().getValues() : [];
+    const hariIni = new Date().toLocaleDateString("id-ID");
+    const siswaSudahAbsenHariIni = new Set();
+    logData.slice(1).forEach(row => {
+        if (new Date(row[0]).toLocaleDateString("id-ID") === hariIni) {
+            siswaSudahAbsenHariIni.add(row[1].toString().trim());
+        }
+    });
+    const siswaBelumAbsen = [];
+    semuaSiswa.slice(1).forEach(row => {
+        const nisn = row[0].toString().trim();
+        const kelasSiswa = row[3];
+        const statusAktif = row[7];
+        if (kelasSiswa === params.kelasDiampu && statusAktif === "Aktif" && !siswaSudahAbsenHariIni.has(nisn)) {
+            siswaBelumAbsen.push({ nisn: nisn, nama: row[2] });
+        }
+    });
+    return siswaBelumAbsen.sort((a, b) => a.nama.localeCompare(b.nama));
+}
+
+function handleEditSingle(data, ss) {
+    const { uniqueId, newStatus } = data;
+    const sheet = ss.getSheetByName("Log Absensi");
+    const logData = sheet.getDataRange().getValues();
+    for (let i = 1; i < logData.length; i++) {
+        let rowId = `${new Date(logData[i][0]).getTime()}-${logData[i][1].toString().trim()}`;
+        if (rowId === uniqueId) {
+            sheet.getRange(i + 1, 6).setValue(newStatus);
+            return `Data absensi berhasil diubah menjadi ${newStatus}.`;
+        }
+    }
+    throw new Error("Data absensi tidak ditemukan untuk diupdate.");
+}
+
+function handleSaveUnscanned(data, ss) {
+    const { absensi } = data;
+    const logSheet = ss.getSheetByName("Log Absensi");
+    const dbSiswaSheet = ss.getSheetByName("Database Siswa");
+    const dataSiswa = dbSiswaSheet.getDataRange().getValues();
+    const timestamp = new Date();
+    let count = 0;
+    const infoHariTanggal = timestamp.toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    absensi.forEach((absen, index) => {
+        if (absen.status) {
+            let siswaInfo = null;
+            for (let i = 1; i < dataSiswa.length; i++) {
+                if (dataSiswa[i][0].toString().trim() === absen.nisn) {
+                    siswaInfo = { nisn: dataSiswa[i][0], nomorAbsen: dataSiswa[i][1], namaSiswa: dataSiswa[i][2], kelas: dataSiswa[i][3], namaOrtu: dataSiswa[i][4], nomorWa: dataSiswa[i][5].toString() };
+                    break;
+                }
+            }
+            if (siswaInfo) {
+                logSheet.appendRow([timestamp, siswaInfo.nisn, siswaInfo.nomorAbsen, siswaInfo.namaSiswa, siswaInfo.kelas, absen.status]);
+                let pesanNotifikasi = "";
+                if (absen.status === "Sakit") pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} tidak masuk sekolah karena *sakit*.\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`;
+                else if (absen.status === "Izin") pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *izin* yang telah dikonfirmasi kepada wali kelas.`;
+                else if (absen.status === "Tanpa Keterangan") pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\nKami informasikan bahwa hingga saat ini ${siswaInfo.namaSiswa} kelas ${siswaInfo.kelas} *belum hadir* atau *tidak hadir tanpa keterangan* pada hari ${infoHariTanggal}.\nMohon segera konfirmasi kepada wali kelas atau melalui group kelas. Terima kasih.`;
+                kirimWhatsApp(siswaInfo.nomorWa, pesanNotifikasi);
+                count++;
+                if (index < absensi.length - 1) {
+                    Utilities.sleep(3000);
+                }
+            }
+        }
+    });
+    return `${count} data absensi berhasil disimpan dan notifikasi telah dikirim.`;
+}
