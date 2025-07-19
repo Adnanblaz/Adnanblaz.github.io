@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- Link ke File CSS Eksternal -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body class="portal-body">
     <div class="container mt-4 mb-4">
@@ -33,11 +34,14 @@
             </div>
             <div id="main-menu" class="card card-body mb-3">
                 <div class="row">
-                    <div class="col-md-6 mb-2 mb-md-0">
+                    <div class="col-md-4 mb-2 mb-md-0">
                         <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#scan-modal"><i class="fas fa-qrcode"></i> Scan Absensi Sekarang</button>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4 mb-2 mb-md-0">
                         <button class="btn btn-danger btn-block" id="unscanned-btn" onclick="showUnscannedForm()"><i class="fas fa-user-clock"></i> Absensi Siswa Tidak Hadir</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-warning btn-block" id="manual-input-btn" onclick="showManualAttendanceForm()"><i class="fas fa-edit"></i> Input Absensi Manual</button>
                     </div>
                 </div>
             </div>
@@ -79,7 +83,7 @@
                     <div id="statusAlert" class="alert mt-3" role="alert">Status: <strong id="attendanceStatus"></strong></div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="resumeScanner()">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-primary" id="confirmButton">✅ Lanjutkan</button>
                 </div>
             </div>
@@ -92,6 +96,7 @@
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <script>
     // --- GANTI DENGAN KONFIGURASI FIREBASE ANDA ---
@@ -116,6 +121,7 @@
     const logoutButton = document.getElementById('logoutButton');
     const contentContainer = document.getElementById('content-container');
     const unscannedBtn = document.getElementById('unscanned-btn');
+    const manualInputBtn = document.getElementById('manual-input-btn');
 
     // --- Logika Login ---
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -145,6 +151,7 @@
             welcomeMessage.innerHTML = `Selamat Datang, <strong>${currentUser.name}</strong>!`;
             
             unscannedBtn.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
+            manualInputBtn.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
 
             if (currentUser.role === 'admin' || currentUser.role === 'walikelas') {
                 document.getElementById('arsip-button-container').innerHTML = `<a href="arsip.html" class="btn btn-secondary mt-3"><i class="fas fa-archive"></i> Buka Arsip Laporan</a>`;
@@ -175,6 +182,11 @@
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
     });
 
+    $('#confirmModal').on('hidden.bs.modal', function () {
+        // Fungsi ini akan terpanggil SETELAH modal konfirmasi ditutup
+        resumeScanner();
+    });
+
     $('#scan-modal').on('hidden.bs.modal', function () {
         stopScanner();
     });
@@ -192,15 +204,44 @@
 
         try {
             const siswaSnapshot = await db.collection('siswa').where('nisn', '==', nisn).get();
-            if (siswaSnapshot.empty) throw new Error("Siswa tidak terdaftar.");
+            if (siswaSnapshot.empty) {
+                // Langsung lempar error jika siswa tidak terdaftar
+                throw new Error("Siswa tidak terdaftar."); 
+            }
             const siswaData = siswaSnapshot.docs[0].data();
 
             const today = new Date();
             const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            // Tentukan akhir hari untuk query yang lebih akurat
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59); 
+
+            // --- LOGIKA BARU UNTUK MENCEGAH SCAN GANDA ---
+
+            // 1. Cek terlebih dahulu apakah siswa sudah absen "Pulang" hari ini.
+            const pulangLogSnapshot = await db.collection('log_absensi')
+                .where('nisn', '==', nisn)
+                .where('timestamp', '>=', startOfDay)
+                .where('timestamp', '<=', endOfDay)
+                .where('status', '==', 'Pulang')
+                .get();
+
+            // 2. Jika sudah ada log "Pulang", tampilkan alert dan hentikan proses.
+            if (!pulangLogSnapshot.empty) {
+                alert(`Siswa atas nama ${siswaData.nama} sudah tercatat absen pulang hari ini. Tidak dapat melakukan scan ulang.`);
+                resumeScanner(); // Aktifkan kembali scanner setelah alert ditutup
+                return; // Hentikan eksekusi fungsi
+            }
+
+            // --- LOGIKA LAMA (JIKA SISWA BELUM ABSEN PULANG) ---
             
-            const logSnapshot = await db.collection('log_absensi').where('nisn', '==', nisn).where('timestamp', '>=', startOfDay).where('status', '==', 'Masuk').get();
+            // 3. Jika belum pulang, baru cek log "Masuk" untuk menentukan status selanjutnya.
+            const masukLogSnapshot = await db.collection('log_absensi')
+                .where('nisn', '==', nisn)
+                .where('timestamp', '>=', startOfDay)
+                .where('status', '==', 'Masuk')
+                .get();
             
-            const statusFinal = logSnapshot.empty ? "Masuk" : "Pulang";
+            const statusFinal = masukLogSnapshot.empty ? "Masuk" : "Pulang";
 
             document.getElementById('studentName').textContent = siswaData.nama;
             document.getElementById('studentClass').textContent = `Kelas ${siswaData.kelas}`;
@@ -208,6 +249,7 @@
             document.getElementById('statusAlert').className = `alert ${statusFinal === 'Masuk' ? 'alert-success' : 'alert-info'}`;
             
             $('#confirmModal').modal('show');
+
         } catch (error) {
             alert(`Error: ${error.message}`);
             resumeScanner();
@@ -215,8 +257,15 @@
     }
 
     function resumeScanner() {
-        if (html5QrCode && html5QrCode.getState() === 2) { // 2 is PAUSED state
-             html5QrCode.resume();
+        // Kita langsung mencoba melanjutkan (resume) scanner.
+        // Penggunaan try-catch di sini untuk keamanan jika ada error tak terduga,
+        // ini lebih andal daripada mengecek state.
+        try {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.resume();
+            }
+        } catch (err) {
+            console.error("Gagal melanjutkan scanner:", err);
         }
     }
 
@@ -241,13 +290,30 @@
             });
             
             $('#confirmModal').modal('hide');
-            alert(`Absensi ${status} untuk ${siswaData.nama} berhasil!`);
+            Toastify({
+                text: `Absensi ${status} untuk ${siswaData.nama} berhasil!`,
+                duration: 3000, // Notifikasi hilang dalam 3 detik
+                gravity: "top", // Muncul di atas
+                position: "center", // Muncul di tengah
+                style: {
+                    background: "#4CAF50", // Warna hijau untuk sukses
+                    textAlign: "center"
+                },
+            }).showToast();
         } catch (error) {
-            alert(`Gagal menyimpan: ${error.message}`);
+            Toastify({
+                text: `Gagal menyimpan: ${error.message}`,
+                duration: 3000,
+                gravity: "top",
+                position: "center",
+                style: {
+                    background: "#F44336", // Warna merah untuk error
+                    textAlign: "center"
+                },
+            }).showToast();
         } finally {
             confirmButton.disabled = false;
             confirmButton.innerHTML = '✅ Lanjutkan';
-            resumeScanner();
         }
     });
 
@@ -484,6 +550,185 @@
         } catch (error) {
             alert(`Gagal menyimpan: ${error.message}`);
             button.disabled = false; button.innerHTML = '<i class="fas fa-save"></i> Simpan Semua & Kirim Notifikasi';
+        }
+    }
+
+        // Fungsi untuk menampilkan form input manual (VERSI BARU & LEBIH CERDAS)
+    async function showManualAttendanceForm() {
+        contentContainer.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Input Absensi Manual (Siswa Belum Tercatat)</h5>
+                    <div class="form-group">
+                        <label for="manual-date">Pilih Tanggal:</label>
+                        <input type="date" id="manual-date" class="form-control" max="${new Date().toISOString().split("T")[0]}">
+                    </div>
+                    <div id="manual-student-list-container">
+                        <p class="text-muted">Silakan pilih tanggal untuk menampilkan daftar siswa yang belum memiliki catatan absensi sama sekali.</p>
+                    </div>
+                </div>
+            </div>`;
+
+        const dateInput = document.getElementById('manual-date');
+        dateInput.addEventListener('change', async function() {
+            const selectedDateString = this.value;
+            if (!selectedDateString) return;
+
+            const studentListContainer = document.getElementById('manual-student-list-container');
+            studentListContainer.innerHTML = '<div class="text-center mt-3"><div class="spinner-border"></div><p>Mencari siswa yang belum tercatat...</p></div>';
+            
+            try {
+                // LANGKAH 1: Ambil semua siswa aktif di kelas
+                const classSnapshot = await db.collection('siswa')
+                    .where('kelas', '==', currentUser.kelasDiampu)
+                    .where('status', '==', 'Aktif')
+                    .get();
+                
+                const allStudentsMap = new Map();
+                classSnapshot.forEach(doc => {
+                    allStudentsMap.set(doc.data().nisn, doc.data());
+                });
+
+                // LANGKAH 2: Ambil semua NISN yang sudah punya log di tanggal terpilih
+                const selectedDate = new Date(selectedDateString);
+                const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+
+                const logSnapshot = await db.collection('log_absensi')
+                    .where('kelas', '==', currentUser.kelasDiampu)
+                    .where('timestamp', '>=', startOfDay)
+                    .where('timestamp', '<=', endOfDay)
+                    .get();
+
+                const nisnWithLogs = new Set();
+                logSnapshot.forEach(doc => {
+                    nisnWithLogs.add(doc.data().nisn);
+                });
+
+                // LANGKAH 3: Filter untuk mendapatkan siswa yang belum punya log
+                const studentsWithoutLogs = [];
+                for (const [nisn, studentData] of allStudentsMap.entries()) {
+                    if (!nisnWithLogs.has(nisn)) {
+                        studentsWithoutLogs.push(studentData);
+                    }
+                }
+
+                // Urutkan berdasarkan nomor absen
+                studentsWithoutLogs.sort((a, b) => a.nomorAbsen - b.nomorAbsen);
+
+                if (studentsWithoutLogs.length === 0) {
+                    studentListContainer.innerHTML = '<div class="alert alert-success">Semua siswa di kelas ini sudah memiliki catatan absensi pada tanggal tersebut.</div>';
+                    return;
+                }
+
+                let formHtml = `<form id="manualAttendanceForm"><div class="table-responsive"><table class="table table-sm">`;
+                studentsWithoutLogs.forEach(siswa => {
+                    formHtml += `<tr>
+                        <td>${siswa.nomorAbsen}. ${siswa.nama}</td>
+                        <td>
+                            <select class="form-control form-control-sm" data-nisn="${siswa.nisn}" data-nama="${siswa.nama}" data-kelas="${siswa.kelas}" data-noabsen="${siswa.nomorAbsen}">
+                                <option value="Hadir" selected>Hadir</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Izin">Izin</option>
+                                <option value="Tanpa Keterangan">Tanpa Keterangan</option>
+                            </select>
+                        </td>
+                    </tr>`;
+                });
+                formHtml += '</table></div><button type="submit" class="btn btn-success mt-3"><i class="fas fa-save"></i> Simpan Absensi</button></form>';
+                studentListContainer.innerHTML = formHtml;
+
+                document.getElementById('manualAttendanceForm').addEventListener('submit', saveManualAttendance);
+
+            } catch (error) {
+                studentListContainer.innerHTML = `<div class="alert alert-danger">Gagal memuat daftar siswa: ${error.message}</div>`;
+            }
+        });
+    }
+
+        // Fungsi untuk menyimpan data dari form manual (VERSI BARU)
+    async function saveManualAttendance(e) {
+        e.preventDefault();
+        const button = this.querySelector('button');
+        const selectedDateString = document.getElementById('manual-date').value;
+
+        if (!selectedDateString) {
+            alert('Silakan pilih tanggal terlebih dahulu!');
+            return;
+        }
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengecek data...';
+
+        // ---- PENAMBAHAN FITUR ANTI-DUPLIKAT ----
+        try {
+            const selectedDate = new Date(selectedDateString);
+            selectedDate.setHours(8, 0, 0, 0); // Atur jam agar konsisten
+            const firebaseTimestamp = firebase.firestore.Timestamp.fromDate(selectedDate);
+
+            // Cek apakah sudah ada data untuk kelas ini di tanggal yang dipilih
+            const existingLogQuery = await db.collection('log_absensi')
+                .where('kelas', '==', currentUser.kelasDiampu)
+                .where('timestamp', '==', firebaseTimestamp)
+                .limit(1)
+                .get();
+
+            if (!existingLogQuery.empty) {
+                alert('Data absensi untuk tanggal ini sudah pernah diisi sebelumnya. Harap hubungi admin jika ingin mengubahnya.');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-save"></i> Simpan Absensi';
+                return;
+            }
+            // ---- AKHIR FITUR ANTI-DUPLIKAT ----
+
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
+            
+            const selections = this.querySelectorAll('select');
+            // HAPUS .filter() AGAR SEMUA SISWA (TERMASUK YG HADIR) DISIMPAN
+            const absensiData = Array.from(selections)
+                .map(select => ({
+                    nisn: select.dataset.nisn,
+                    nama: select.dataset.nama,
+                    kelas: select.dataset.kelas,
+                    nomorAbsen: select.dataset.noabsen,
+                    status: select.value
+                }));
+
+            const batch = db.batch();
+            const tahunAjaran = new Date(selectedDateString).getMonth() >= 6 ? `${new Date(selectedDateString).getFullYear()}-${new Date(selectedDateString).getFullYear() + 1}` : `${new Date(selectedDateString).getFullYear() - 1}-${new Date(selectedDateString).getFullYear()}`;
+
+            absensiData.forEach(absen => {
+                // Kita hanya simpan log untuk yang TIDAK HADIR saja, agar database efisien
+                if (absen.status !== 'Hadir') {
+                    const logRef = db.collection('log_absensi').doc();
+                    batch.set(logRef, {
+                        nisn: absen.nisn,
+                        nama: absen.nama,
+                        kelas: absen.kelas,
+                        nomorAbsen: parseInt(absen.nomorAbsen),
+                        status: absen.status,
+                        timestamp: firebaseTimestamp,
+                        tahunAjaran: tahunAjaran,
+                        dicatatOleh: currentUser.name
+                    });
+                }
+            });
+
+            await batch.commit();
+            Toastify({
+                text: `Berhasil menyimpan absensi untuk tanggal ${selectedDate.toLocaleDateString('id-ID')}.`,
+                duration: 4000,
+                gravity: "top",
+                position: "center",
+                style: { background: "#4CAF50", textAlign: "center" },
+            }).showToast();
+            contentContainer.innerHTML = ''; // Kosongkan form setelah berhasil
+
+        } catch (error) {
+            alert(`Gagal menyimpan: ${error.message}`);
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-save"></i> Simpan Absensi';
         }
     }
 </script>
