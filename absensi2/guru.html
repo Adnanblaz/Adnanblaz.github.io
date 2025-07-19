@@ -220,8 +220,15 @@
     }
 
     function resumeScanner() {
-        if (html5QrCode && html5QrCode.getState() === 2) { // 2 is PAUSED state
-             html5QrCode.resume();
+        // Kita langsung mencoba melanjutkan (resume) scanner.
+        // Penggunaan try-catch di sini untuk keamanan jika ada error tak terduga,
+        // ini lebih andal daripada mengecek state.
+        try {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.resume();
+            }
+        } catch (err) {
+            console.error("Gagal melanjutkan scanner:", err);
         }
     }
 
