@@ -700,12 +700,14 @@ async function updateQuickDashboard() {
                         <div class="card class-accordion-item">
                             <div class="card-header" id="heading${classId}">
                                 <h2 class="mb-0">
-                                    <button class="btn btn-block text-left d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#collapse${classId}" aria-expanded="false" aria-controls="collapse${classId}"> Kelas ${kelas} <span class="badge badge-primary">${classData.hadir.size}/${classData.total} Hadir</span>
+                                    <button class="btn btn-block text-left d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#collapse${classId}" aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="collapse${classId}">
+                                        Kelas ${kelas} <span class="badge badge-primary">${classData.hadir.size}/${classData.total} Hadir</span>
                                         <i class="fas fa-chevron-down accordion-icon"></i>
                                     </button>
                                 </h2>
                             </div>
-                            <div id="collapse${classId}" class="collapse" aria-labelledby="heading${classId}" data-parent="#classAccordion"> <div class="card-body">
+                            <div id="collapse${classId}" class="collapse ${index === 0 ? 'show' : ''}" aria-labelledby="heading${classId}" data-parent="#classAccordion">
+                                <div class="card-body">
                                     <div class="summary-metrics compact-metrics">
                                         <div class="metric-item present">
                                             <span class="metric-value">${classData.hadir.size}</span>
