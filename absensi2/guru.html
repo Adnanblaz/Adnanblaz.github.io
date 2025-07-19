@@ -79,7 +79,7 @@
                     <div id="statusAlert" class="alert mt-3" role="alert">Status: <strong id="attendanceStatus"></strong></div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="resumeScanner()">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-primary" id="confirmButton">✅ Lanjutkan</button>
                 </div>
             </div>
@@ -200,13 +200,6 @@
             $('#confirmModal').modal('show');
         } catch (error) {
             alert(`Error: ${error.message}`);
-            resumeScanner();
-        }
-    }
-
-    function resumeScanner() {
-        if (html5QrCode && html5QrCode.getState() === 2) { // 2 is PAUSED state
-             html5QrCode.resume();
         }
     }
 
@@ -234,10 +227,10 @@
             alert(`Absensi ${status} untuk ${siswaData.nama} berhasil!`);
         } catch (error) {
             alert(`Gagal menyimpan: ${error.message}`);
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
         } finally {
             confirmButton.disabled = false;
             confirmButton.innerHTML = '✅ Lanjutkan';
-            resumeScanner();
         }
     });
 
