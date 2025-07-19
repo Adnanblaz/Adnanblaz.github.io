@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- Link ke File CSS Eksternal -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body class="portal-body">
     <div class="container mt-4 mb-4">
@@ -92,6 +93,7 @@
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <script>
     // --- GANTI DENGAN KONFIGURASI FIREBASE ANDA ---
@@ -253,9 +255,25 @@
             });
             
             $('#confirmModal').modal('hide');
-            alert(`Absensi ${status} untuk ${siswaData.nama} berhasil!`);
+            Toastify({
+                text: `Absensi ${status} untuk ${siswaData.nama} berhasil!`,
+                duration: 3000, // Notifikasi hilang dalam 3 detik
+                gravity: "top", // Muncul di atas
+                position: "right", // Muncul di kanan
+                style: {
+                    background: "#4CAF50", // Warna hijau untuk sukses
+                },
+            }).showToast();
         } catch (error) {
-            alert(`Gagal menyimpan: ${error.message}`);
+            Toastify({
+                text: `Gagal menyimpan: ${error.message}`,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: "#F44336", // Warna merah untuk error
+                },
+            }).showToast();
         } finally {
             confirmButton.disabled = false;
             confirmButton.innerHTML = '✅ Lanjutkan';
