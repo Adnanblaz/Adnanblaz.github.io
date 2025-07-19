@@ -59,7 +59,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Scanner Absensi</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stopScanner()">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -174,12 +174,6 @@
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
     });
-
-    function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().catch(err => console.log("Gagal menghentikan scanner.", err));
-        }
-    }
 
     async function onScanSuccess(decodedText, decodedResult) {
         if ($('#confirmModal').is(':visible')) return; // Mencegah scan ganda saat modal sudah terbuka
