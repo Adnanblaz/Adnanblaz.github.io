@@ -1,0 +1,73 @@
+/* =================================================================
+   GAYA UTAMA & VARIABEL
+   ================================================================= */
+:root {
+    --primary-color: #0056b3; /* Biru yang lebih dalam dan profesional */
+    --secondary-color: #ffc107; /* Kuning sebagai aksen */
+    --light-bg: #f8f9fa;
+    --white-bg: #ffffff;
+    --text-dark: #212529;
+    --text-light: #6c757d;
+    --border-radius-lg: 20px;
+    --shadow-soft: 0 8px 25px rgba(0,0,0,0.05);
+    --shadow-md: 0 12px 35px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--white-bg);
+    color: var(--text-dark);
+}
+
+/* =================================================================
+   GAYA UNTUK LANDING PAGE (index.html)
+   ================================================================= */
+.navbar { box-shadow: var(--shadow-soft); padding: 1rem 0; }
+.hero-section {
+    background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), url('https://placehold.co/1920x1080/EAF2FF/333?text=Siswa-Siswi+Ceria') no-repeat center center;
+    background-size: cover;
+    padding: 100px 0;
+}
+.hero-section h1 { font-weight: 800; font-size: 3.5rem; color: var(--primary-color); }
+.hero-section .lead { max-width: 600px; margin: 1.5rem auto; }
+.btn-primary {
+    background-color: var(--primary-color); border-color: var(--primary-color);
+    padding: 12px 30px; font-weight: 600; border-radius: 50px; transition: all 0.3s ease;
+}
+.btn-primary:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.section-title { font-weight: 700; margin-bottom: 1rem; }
+.section-subtitle { color: var(--text-light); margin-bottom: 3rem; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+.info-card {
+    background: var(--white-bg); padding: 2.5rem; border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-soft); text-align: center; transition: all 0.3s ease;
+}
+.info-card:hover { transform: translateY(-10px); box-shadow: var(--shadow-md); }
+.info-card .icon { font-size: 3rem; color: var(--primary-color); margin-bottom: 1.5rem; }
+.program-section .row { align-items: center; }
+.program-section img { border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); }
+.news-card img { border-top-left-radius: var(--border-radius-lg); border-top-right-radius: var(--border-radius-lg); height: 220px; object-fit: cover; }
+.cta-section { background-color: var(--primary-color); color: white; border-radius: var(--border-radius-lg); padding: 4rem; }
+.footer { background-color: var(--text-dark); color: white; }
+.footer a { color: var(--secondary-color); }
+
+/* Instagram Section Styling */
+.instagram-section { background-color: var(--light-bg); }
+.instagram-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+.instagram-post { position: relative; overflow: hidden; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-soft); transition: transform 0.3s ease; }
+.instagram-post:hover { transform: scale(1.05); }
+.instagram-post img { width: 100%; height: 100%; object-fit: cover; }
+
+/* =================================================================
+   GAYA UNTUK PORTAL (guru.html, ortu.html, arsip.html)
+   ================================================================= */
+.portal-body { background-color: #f8f9fa; }
+.portal-container { max-width: 960px; }
+.student-name { cursor: pointer; color: #007bff; text-decoration: none !important; }
+.student-name:hover { color: #0056b3; }
+.details-row > td { padding: 0 !important; background-color: #e9ecef !important; border: none !important; }
+.details-content { padding: 1rem; }
+.back-link-container { text-align: center; margin-bottom: 10px; }
+.card-title-centered { text-align: center; }
+#scan-modal .modal-dialog { max-width: 95%; }
+#reader { width: 100%; border: 5px solid #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsip Laporan Kehadiran</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link ke File CSS Eksternal -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="portal-body">
+    <div class="container mt-4 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-2">
+                    <a href="guru.html" class="text-muted">&larr; Kembali ke Portal Guru</a>
+                </div>
+                <h3 class="card-title text-center">Arsip Laporan Kehadiran</h3>
+                
+                <div id="arsip-selector-container" class="text-center mt-4">
+                    <p class="text-muted">Pilih tahun ajaran untuk melihat arsip data.</p>
+                    <div id="arsip-buttons" class="btn-group-vertical w-100">
+                        <div class="spinner-border"></div>
+                    </div>
+                </div>
+
+                <div id="semester-container" class="text-center card card-body mt-4" style="display:none;">
+                    <h5 id="semester-title"></h5>
+                    <div class="btn-group mt-2" role="group">
+                        <button class="btn btn-info" onclick="fetchArsipData(1)">Semester 1 (Juli - Des)</button>
+                        <button class="btn btn-warning" onclick="fetchArsipData(2)">Semester 2 (Jan - Juni)</button>
+                    </div>
+                </div>
+
+                <div id="content-container" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    // --- GANTI DENGAN KONFIGURASI FIREBASE ANDA ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyD4nAPhGV-USPyElTyHwiDZO0ZvUGRoK5E",
+        authDomain: "sistem-absensi-sdn-cicohag.firebaseapp.com",
+        projectId: "sistem-absensi-sdn-cicohag",
+        storageBucket: "sistem-absensi-sdn-cicohag.appspot.com",
+        messagingSenderId: "540116242535",
+        appId: "1:540116242535:web:41e3e1e7456ecf1c6584c2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let selectedArsip = null;
+    let fullRekapData = {};
+    const arsipButtonsContainer = document.getElementById('arsip-buttons');
+    const semesterContainer = document.getElementById('semester-container');
+    const semesterTitle = document.getElementById('semester-title');
+    const contentContainer = document.getElementById('content-container');
+
+    window.onload = async function() {
+        try {
+            const snapshot = await db.collection('arsip_index').orderBy('tahun', 'desc').get();
+            if (snapshot.empty) throw new Error("Tidak ada data arsip.");
+            
+            let buttonsHtml = '';
+            snapshot.forEach(doc => {
+                const arsip = doc.data();
+                buttonsHtml += `<button class="btn btn-outline-primary mb-2" onclick="selectArsip('${arsip.tahun}')">Tahun Ajaran ${arsip.tahun}</button>`;
+            });
+            arsipButtonsContainer.innerHTML = buttonsHtml;
+        } catch (error) {
+            arsipButtonsContainer.innerHTML = `<div class="alert alert-info">Belum ada data yang diarsipkan.</div>`;
+        }
+    };
+
+    function selectArsip(tahun) {
+        selectedArsip = { tahun: tahun };
+        semesterTitle.textContent = `Pilih Semester untuk Tahun Ajaran ${tahun}`;
+        semesterContainer.style.display = 'block';
+        contentContainer.innerHTML = '';
+    }
+
+    async function fetchArsipData(semester) {
+        contentContainer.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat rekap arsip...</p></div>';
+        
+        try {
+            const startMonth = semester === 1 ? 6 : 0; // Juli
+            const endMonth = semester === 1 ? 11 : 5;   // Desember atau Juni
+
+            const logSnapshot = await db.collection('log_absensi')
+                .where('tahunAjaran', '==', selectedArsip.tahun)
+                .orderBy('timestamp', 'desc')
+                .get();
+
+            let rekapSiswa = {};
+            logSnapshot.forEach(doc => {
+                const log = doc.data();
+                const logDate = log.timestamp.toDate();
+                const logMonth = logDate.getMonth();
+
+                if (logMonth >= startMonth && logMonth <= endMonth) {
+                    // Jika siswa belum ada di rekap, buat entri baru
+                    if (!rekapSiswa[log.nisn]) {
+                        rekapSiswa[log.nisn] = {
+                            nisn: log.nisn,
+                            nomorAbsen: log.nomorAbsen,
+                            nama: log.nama,
+                            kelas: log.kelas,
+                            total: { sakit: 0, izin: 0, alpha: 0 },
+                            detail: []
+                        };
+                    }
+                    
+                    // Hitung total ketidakhadiran
+                    const status = log.status;
+                    if (status === "Sakit") rekapSiswa[log.nisn].total.sakit++;
+                    else if (status === "Izin") rekapSiswa[log.nisn].total.izin++;
+                    else if (status === "Tanpa Keterangan") rekapSiswa[log.nisn].total.alpha++;
+
+                    // Tambahkan ke rincian
+                    if (["Sakit", "Izin", "Tanpa Keterangan"].includes(status)) {
+                        rekapSiswa[log.nisn].detail.push({
+                            tanggal: logDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+                            status: status
+                        });
+                    }
+                }
+            });
+
+            const hasilArray = Object.values(rekapSiswa);
+            let groupedByClass = {};
+            hasilArray.forEach(siswa => {
+                if (!groupedByClass[siswa.kelas]) groupedByClass[siswa.kelas] = [];
+                groupedByClass[siswa.kelas].push(siswa);
+            });
+            fullRekapData = groupedByClass;
+            renderDashboard();
+
+        } catch (error) {
+            contentContainer.innerHTML = `<div class="alert alert-danger">Gagal memuat data arsip: ${error.message}</div>`;
+        }
+    }
+
+    function renderDashboard() {
+        let html = '<div class="class-filters nav nav-pills mb-3" id="pills-tab" role="tablist">';
+        const kelasKeys = Object.keys(fullRekapData).sort();
+        kelasKeys.forEach((kelas, index) => {
+            const kelasId = `arsip-${kelas.replace(/\s+/g, '')}`;
+            html += `<a class="nav-link ${index === 0 ? 'active' : ''}" data-toggle="pill" href="#${kelasId}">${kelas}</a>`;
+        });
+        html += '</div><div class="tab-content" id="pills-tabContent">';
+        kelasKeys.forEach((kelas, index) => {
+            const kelasId = `arsip-${kelas.replace(/\s+/g, '')}`;
+            html += `<div class="tab-pane fade ${index === 0 ? 'show active' : ''}" id="${kelasId}">`;
+            html += renderTable(fullRekapData[kelas], `Rekap Arsip Kelas: ${kelas}`);
+            html += '</div>';
+        });
+        html += '</div>';
+        contentContainer.innerHTML = html;
+    }
+
+    function renderTable(dataSiswa, title) {
+        if (!dataSiswa || dataSiswa.length === 0) return '<div class="alert alert-info">Tidak ada data untuk ditampilkan.</div>';
+        let tableHtml = `<div class="card"><div class="card-body"><h5 class="card-title">${title}</h5><p class="card-text small text-muted">Klik nama siswa untuk melihat rincian ketidakhadiran.</p><div class="table-responsive"><table class="table table-hover table-sm"><thead><tr><th>No</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Alfa</th></tr></thead><tbody>`;
+        dataSiswa.sort((a,b) => a.nomorAbsen - b.nomorAbsen).forEach(siswa => {
+            tableHtml += `<tr onclick="toggleDetails('${siswa.nisn}')" style="cursor: pointer;"><td>${siswa.nomorAbsen}</td><td><span class="student-name">${siswa.nama}</span></td><td>${siswa.total.sakit}</td><td>${siswa.total.izin}</td><td>${siswa.total.alpha}</td></tr><tr id="detail-${siswa.nisn}" class="details-row" style="display: none;"><td colspan="5"><div class="details-content"></div></td></tr>`;
+        });
+        tableHtml += '</tbody></table></div></div></div>';
+        return tableHtml;
+    }
+
+    function toggleDetails(nisn) {
+        const allDetailRows = document.querySelectorAll('.details-row');
+        const targetDetailRow = document.getElementById(`detail-${nisn}`);
+        const wasOpen = targetDetailRow.style.display !== 'none';
+        allDetailRows.forEach(row => { if(row.id !== targetDetailRow.id) row.style.display = 'none'; });
+        if (!wasOpen) {
+            targetDetailRow.style.display = 'table-row';
+            const detailCell = targetDetailRow.querySelector('.details-content');
+            if (detailCell.innerHTML.trim() === '') {
+                const siswaData = findSiswaByNisn(nisn);
+                detailCell.innerHTML = renderDetailContent(siswaData);
+            }
+        } else {
+            targetDetailRow.style.display = 'none';
+        }
+    }
+    
+    function findSiswaByNisn(nisn) {
+        for(const kelas in fullRekapData) {
+            const siswa = fullRekapData[kelas].find(s => s.nisn === nisn);
+            if (siswa) return siswa;
+        }
+    }
+
+    function renderDetailContent(siswa) {
+        if (!siswa.detail || siswa.detail.length === 0) return '<div class="alert alert-light">Tidak ada catatan ketidakhadiran.</div>';
+        let detailHtml = '<table class="table table-bordered table-sm"><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>';
+        // Sorting tidak lagi diperlukan karena data sudah diurutkan saat fetch
+        siswa.detail.forEach(d => {
+            detailHtml += `<tr><td>${d.tanggal}</td><td>${d.status}</td></tr>`;
+        });
+        detailHtml += '</tbody></table>';
+        return detailHtml;
+    }
+</script>
+</body>
+</html>

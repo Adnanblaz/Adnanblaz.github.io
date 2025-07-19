@@ -71,11 +71,11 @@ function onFormSubmit(e) {
   const infoHariTanggal = timestamp.toLocaleDateString("id-ID", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   switch (statusFinal) {
-    case "Masuk": pesanNotifikasi = `✅ *Notifikasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah *HADIR* di sekolah pada hari ${infoHariTanggal}.\n\nTerima kasih atas kerjasamanya Bapak/Ibu.`; break;
-    case "Pulang": pesanNotifikasi = `🏠 *Notifikasi Pulang Sekolah*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah menyelesaikan kegiatan belajar pada hari ${infoHariTanggal} pukul ${waktuScan} WIB. Saat ini sudah waktunya *PULANG* dari sekolah. Mohon Bapak/Ibu dapat menjemput langsung di sekolah atau menunggu kehadirannya di rumah.\n\nTerima kasih atas perhatian dan kerjasamanya. 🙏`; break;
-    case "Sakit": pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak masuk sekolah karena *SAKIT*.\n\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`; break;
-    case "Izin": pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *IZIN* yang telah dikonfirmasi kepada wali kelas.`; break;
-    case "Tanpa Keterangan": pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\n\nKami informasikan bahwa pada hari ${infoHariTanggal} *${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} *TIDAK HADIR TANPA KETERANGAN* .\n\nJika sedang *sakit* atau *izin*, harap segera diberitahukan kepada wali kelas untuk pendataan kehadiran.\n\nTerima kasih atas perhatian dan kerjasamanya.`; break;
+    case "Masuk": pesanNotifikasi = `✅ *Notifikasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah *hadir* di sekolah pada hari ${infoHariTanggal}.\nTerima kasih atas kerjasamanya Bapak/Ibu.`; break;
+    case "Pulang": pesanNotifikasi = `🏠 *Notifikasi Pulang Sekolah*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} telah selesai belajar dan *pulang* dari sekolah pada hari ${infoHariTanggal} pukul ${waktuScan}.\nMohon dijemput di sekolah atau ditunggu kepulangannya di rumah.`; break;
+    case "Sakit": pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} tidak masuk sekolah karena *sakit*.\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`; break;
+    case "Izin": pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *izin* yang telah dikonfirmasi kepada wali kelas.`; break;
+    case "Tanpa Keterangan": pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\nKami informasikan bahwa hingga saat ini ${siswaInfo.namaSiswa} kelas ${siswaInfo.kelas} *belum hadir* atau *tidak hadir tanpa keterangan* pada hari ${infoHariTanggal}.\nMohon segera konfirmasi kepada wali kelas atau melalui group kelas. Terima kasih.`; break;
     default: pesanNotifikasi = `Status kehadiran ananda *${siswaInfo.namaSiswa}* telah dicatat sebagai: *${statusFinal}*.`; break;
   }
   
@@ -335,9 +335,9 @@ function handleSaveUnscanned(data, ss) {
             if (siswaInfo) {
                 logSheet.appendRow([timestamp, siswaInfo.nisn, siswaInfo.nomorAbsen, siswaInfo.namaSiswa, siswaInfo.kelas, absen.status]);
                 let pesanNotifikasi = "";
-                if (absen.status === "Sakit") pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak masuk sekolah karena *SAKIT*.\n\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`;
-                else if (absen.status === "Izin") pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *IZIN* yang telah dikonfirmasi kepada wali kelas.`;
-                else if (absen.status === "Tanpa Keterangan") pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\n\nKami informasikan bahwa pada hari ${infoHariTanggal} *${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} *TIDAK HADIR TANPA KETERANGAN* .\n\nJika sedang *sakit* atau *izin*, harap segera diberitahukan kepada wali kelas untuk pendataan kehadiran.\n\nTerima kasih atas perhatian dan kerjasamanya.`;
+                if (absen.status === "Sakit") pesanNotifikasi = `🤒 *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} tidak masuk sekolah karena *sakit*.\nKami doakan semoga segera diberi kesembuhan dan bisa beraktivitas kembali.`;
+                else if (absen.status === "Izin") pesanNotifikasi = `✉️ *Informasi Kehadiran*\n\n*${siswaInfo.namaSiswa}* kelas ${siswaInfo.kelas} pada hari ${infoHariTanggal} tidak mengikuti kegiatan belajar karena *izin* yang telah dikonfirmasi kepada wali kelas.`;
+                else if (absen.status === "Tanpa Keterangan") pesanNotifikasi = `⚠️ *Konfirmasi Kehadiran*\n\n_Yth. Orang Tua/Wali ${siswaInfo.namaSiswa}_\nKami informasikan bahwa hingga saat ini ${siswaInfo.namaSiswa} kelas ${siswaInfo.kelas} *belum hadir* atau *tidak hadir tanpa keterangan* pada hari ${infoHariTanggal}.\nMohon segera konfirmasi kepada wali kelas atau melalui group kelas. Terima kasih.`;
                 kirimWhatsApp(siswaInfo.nomorWa, pesanNotifikasi);
                 count++;
                 if (index < absensi.length - 1) {
