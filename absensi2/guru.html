@@ -199,15 +199,44 @@
 
         try {
             const siswaSnapshot = await db.collection('siswa').where('nisn', '==', nisn).get();
-            if (siswaSnapshot.empty) throw new Error("Siswa tidak terdaftar.");
+            if (siswaSnapshot.empty) {
+                // Langsung lempar error jika siswa tidak terdaftar
+                throw new Error("Siswa tidak terdaftar."); 
+            }
             const siswaData = siswaSnapshot.docs[0].data();
 
             const today = new Date();
             const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            // Tentukan akhir hari untuk query yang lebih akurat
+            const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59); 
+
+            // --- LOGIKA BARU UNTUK MENCEGAH SCAN GANDA ---
+
+            // 1. Cek terlebih dahulu apakah siswa sudah absen "Pulang" hari ini.
+            const pulangLogSnapshot = await db.collection('log_absensi')
+                .where('nisn', '==', nisn)
+                .where('timestamp', '>=', startOfDay)
+                .where('timestamp', '<=', endOfDay)
+                .where('status', '==', 'Pulang')
+                .get();
+
+            // 2. Jika sudah ada log "Pulang", tampilkan alert dan hentikan proses.
+            if (!pulangLogSnapshot.empty) {
+                alert(`Siswa atas nama ${siswaData.nama} sudah tercatat absen pulang hari ini. Tidak dapat melakukan scan ulang.`);
+                resumeScanner(); // Aktifkan kembali scanner setelah alert ditutup
+                return; // Hentikan eksekusi fungsi
+            }
+
+            // --- LOGIKA LAMA (JIKA SISWA BELUM ABSEN PULANG) ---
             
-            const logSnapshot = await db.collection('log_absensi').where('nisn', '==', nisn).where('timestamp', '>=', startOfDay).where('status', '==', 'Masuk').get();
+            // 3. Jika belum pulang, baru cek log "Masuk" untuk menentukan status selanjutnya.
+            const masukLogSnapshot = await db.collection('log_absensi')
+                .where('nisn', '==', nisn)
+                .where('timestamp', '>=', startOfDay)
+                .where('status', '==', 'Masuk')
+                .get();
             
-            const statusFinal = logSnapshot.empty ? "Masuk" : "Pulang";
+            const statusFinal = masukLogSnapshot.empty ? "Masuk" : "Pulang";
 
             document.getElementById('studentName').textContent = siswaData.nama;
             document.getElementById('studentClass').textContent = `Kelas ${siswaData.kelas}`;
@@ -215,6 +244,7 @@
             document.getElementById('statusAlert').className = `alert ${statusFinal === 'Masuk' ? 'alert-success' : 'alert-info'}`;
             
             $('#confirmModal').modal('show');
+
         } catch (error) {
             alert(`Error: ${error.message}`);
             resumeScanner();
@@ -259,7 +289,7 @@
                 text: `Absensi ${status} untuk ${siswaData.nama} berhasil!`,
                 duration: 3000, // Notifikasi hilang dalam 3 detik
                 gravity: "top", // Muncul di atas
-                position: "right", // Muncul di kanan
+                position: "center", // Muncul di tengah
                 style: {
                     background: "#4CAF50", // Warna hijau untuk sukses
                 },
@@ -269,7 +299,7 @@
                 text: `Gagal menyimpan: ${error.message}`,
                 duration: 3000,
                 gravity: "top",
-                position: "right",
+                position: "center",
                 style: {
                     background: "#F44336", // Warna merah untuk error
                 },
