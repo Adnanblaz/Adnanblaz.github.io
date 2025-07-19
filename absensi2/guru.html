@@ -175,10 +175,6 @@
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
     });
 
-    $('#scan-modal').on('hidden.bs.modal', function () {
-        stopScanner();
-    });
-
     function stopScanner() {
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().catch(err => console.log("Gagal menghentikan scanner.", err));
