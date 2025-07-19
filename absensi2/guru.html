@@ -59,7 +59,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Scanner Absensi</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stopScanner()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -175,6 +175,21 @@
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
     });
 
+    $('#confirmModal').on('hidden.bs.modal', function () {
+        // Fungsi ini akan terpanggil SETELAH modal konfirmasi ditutup
+        resumeScanner();
+    });
+
+    $('#scan-modal').on('hidden.bs.modal', function () {
+        stopScanner();
+    });
+
+    function stopScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.log("Gagal menghentikan scanner.", err));
+        }
+    }
+
     async function onScanSuccess(decodedText, decodedResult) {
         if ($('#confirmModal').is(':visible')) return; // Mencegah scan ganda saat modal sudah terbuka
         html5QrCode.pause();
@@ -200,6 +215,13 @@
             $('#confirmModal').modal('show');
         } catch (error) {
             alert(`Error: ${error.message}`);
+            resumeScanner();
+        }
+    }
+
+    function resumeScanner() {
+        if (html5QrCode && html5QrCode.getState() === 2) { // 2 is PAUSED state
+             html5QrCode.resume();
         }
     }
 
@@ -227,7 +249,6 @@
             alert(`Absensi ${status} untuk ${siswaData.nama} berhasil!`);
         } catch (error) {
             alert(`Gagal menyimpan: ${error.message}`);
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {});
         } finally {
             confirmButton.disabled = false;
             confirmButton.innerHTML = '✅ Lanjutkan';
