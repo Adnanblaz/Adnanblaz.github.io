@@ -61,182 +61,74 @@ body {
 /* =================================================================
    GAYA UNTUK PORTAL (guru.html, ortu.html, arsip.html)
    ================================================================= */
-.portal-body {
-    background-color: #f8f9fa;
-    min-height: 100vh; /* Pastikan body mengisi tinggi viewport */
-    overflow-x: hidden; /* Mencegah scroll horizontal yang tidak diinginkan */
-}
-
-/* Wrapper untuk Sidebar dan Konten */
-.wrapper {
-    display: flex;
-    width: 100%;
-    align-items: stretch;
-    min-height: 100vh; /* Memastikan wrapper mengisi tinggi viewport */
-}
-
-/* --- Sidebar --- */
-#sidebar {
-    min-width: 250px;
-    max-width: 250px;
-    background: var(--primary-color); /* Warna primary */
-    color: #fff;
-    transition: all 0.3s;
-    position: fixed; /* Sidebar tetap di tempat */
-    top: 0;
-    left: 0;
-    height: 100vh; /* Set tinggi sidebar penuh */
-    z-index: 1000; /* Pastikan di atas konten */
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    padding-top: 20px; /* Ruang di atas header */
-}
-
-#sidebar.active {
-    margin-left: -250px; /* Sembunyikan sidebar ke kiri */
-}
-
-#sidebar .sidebar-header {
-    padding: 20px;
-    background: #004d9e; /* Warna sedikit lebih gelap dari primary */
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
-}
-
-#sidebar .sidebar-header h3 {
-    color: #fff;
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-#sidebar ul.components {
-    padding: 20px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-#sidebar ul li a {
-    padding: 10px 20px;
-    font-size: 1.1em;
-    display: block;
-    color: rgba(255,255,255,0.8);
-    transition: all 0.3s;
-}
-
-#sidebar ul li a:hover {
-    color: var(--secondary-color); /* Ubah warna teks saat hover */
-    background: #004085; /* Background saat hover */
-    text-decoration: none;
-}
-
-#sidebar ul li.active > a, a[aria-expanded="true"] {
-    color: #fff;
-    background: #004085;
-}
-
-#sidebar ul li a i {
-    margin-right: 10px;
-}
-
-#sidebar ul ul a {
-    font-size: 0.9em !important;
-    padding-left: 30px !important;
-    background: #003366; /* Background untuk submenu */
-    color: rgba(255,255,255,0.7);
-}
-
-#sidebar ul ul a:hover {
-    background: #002244;
-    color: var(--secondary-color);
-}
-
-.CTAs {
-    padding: 20px;
-    text-align: center;
-}
-
-.CTAs .logout-btn {
-    background: #dc3545; /* Warna merah untuk logout */
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 5px;
-    transition: all 0.3s;
-}
-.CTAs .logout-btn:hover {
-    background: #c82333;
-    color: #fff;
-    text-decoration: none;
-}
-
-
-/* --- Page Content --- */
-#content {
-    width: 100%;
-    padding: 20px;
-    min-height: 100vh;
-    transition: all 0.3s;
-    margin-left: 250px; /* Beri ruang untuk sidebar */
-    padding-top: 70px; /* Ruang untuk navbar atas */
-    position: relative; /* Untuk posisi fixed elements di dalamnya */
-}
-
-#content.active {
-    margin-left: 0; /* Saat sidebar ditutup, konten bergeser ke kiri */
-}
-
-/* Navbar Top (untuk tombol toggle dan welcome message) */
-.custom-navbar-top {
-    position: fixed;
-    width: calc(100% - 250px); /* Lebar sesuai konten */
-    top: 0;
-    left: 250px; /* Sejajar dengan konten */
-    z-index: 999;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 0.75rem 1rem;
-    background-color: #ffffff !important;
-    border-bottom-left-radius: 10px;
-}
-
-#sidebar.active ~ #content .custom-navbar-top {
-    width: 100%; /* Saat sidebar ditutup, navbar melebar */
-    left: 0;
-}
-
-#sidebarCollapse {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    padding: 0.5rem 0.8rem;
-    border-radius: 5px;
-}
-#sidebarCollapse:hover {
-    background: #004085;
-    border-color: #004085;
-}
-
-.navbar-text strong {
-    color: var(--primary-color);
-}
-
-.portal-content-area {
-    padding-top: 20px; /* Tambahan padding di bawah navbar top */
-}
-
-
-/* =================================================================
-   GAYA UNTUK ELEMEN SPESIFIK LAINNYA (DARI KODE ANDA SEBELUMNYA)
-   ================================================================= */
+.portal-body { background-color: #f8f9fa; }
+.portal-container { max-width: 960px; }
 .student-name { cursor: pointer; color: #007bff; text-decoration: none !important; }
 .student-name:hover { color: #0056b3; }
 .details-row > td { padding: 0 !important; background-color: #e9ecef !important; border: none !important; }
 .details-content { padding: 1rem; }
-.back-link-container { text-align: center; margin-bottom: 10px; } /* Untuk halaman login */
-.card-title-centered { text-align: center; } /* Untuk halaman login */
+.back-link-container { text-align: center; margin-bottom: 10px; }
+.card-title-centered { text-align: center; }
 #scan-modal .modal-dialog { max-width: 95%; }
 #reader { width: 100%; border: 5px solid #fff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 
+/* Gaya Baru untuk Quick Dashboard */
+.quick-dashboard {
+    background-color: var(--white-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border: 1px solid #e0e0e0;
+}
+
+.quick-dashboard .card-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.quick-dashboard .card-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-dark);
+}
+
+.quick-dashboard .card-text strong {
+    color: var(--primary-color);
+    font-weight: 800;
+}
 
 /* =================================================================
-   GAYA REVISI TOTAL UNTUK QUICK DASHBOARD (DIREVISI)
+   REVISI GAYA UNTUK QUICK DASHBOARD
    ================================================================= */
+.quick-dashboard {
+    background-color: var(--light-bg); /* Ubah ke light-bg untuk kontras */
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md); /* Sedikit lebih menonjol */
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border: none; /* Hilangkan border */
+    overflow: hidden; /* Pastikan konten tidak meluber */
+}
+
+.quick-dashboard .card-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.4rem; /* Sedikit lebih besar */
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quick-dashboard .card-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-dark);
+}
+
+/* Global Summary Card */
 .quick-summary-card {
     background-color: var(--white-bg);
     border-radius: var(--border-radius-lg);
@@ -247,13 +139,10 @@ body {
 }
 
 .quick-summary-card .summary-title {
-    color: var(--primary-color);
     font-weight: 700;
-    font-size: 1.4rem; /* Sedikit lebih besar */
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
 }
 
 .quick-summary-card .summary-date {
@@ -296,7 +185,7 @@ body {
 
 /* Warna untuk setiap metrik */
 .metric-item.present .metric-value { color: #28a745; /* Green */ }
-.metric-item.return .metric-value { color: #6f42c1; /* Purple */ }
+.metric-item.return .metric-value { color: #6f42c1; /* Purple - Warna baru untuk pulang */ }
 .metric-item.sick .metric-value { color: #ffc107; /* Yellow */ }
 .metric-item.permission .metric-value { color: #17a2b8; /* Cyan */ }
 .metric-item.absent .metric-value { color: #dc3545; /* Red */ }
@@ -391,28 +280,7 @@ body {
 }
 
 /* Responsiveness */
-@media (max-width: 768px) {
-    #sidebar {
-        margin-left: -250px; /* Sembunyikan secara default di mobile */
-    }
-    #sidebar.active {
-        margin-left: 0; /* Tampilkan saat aktif */
-    }
-    #content {
-        width: 100%;
-        margin-left: 0; /* Selalu 0 di mobile */
-    }
-    .custom-navbar-top {
-        width: 100% !important;
-        left: 0 !important;
-        border-radius: 0; /* Hapus radius di mobile */
-    }
-    #sidebarCollapse {
-        display: block; /* Pastikan tombol toggle terlihat */
-    }
-    .navbar-text {
-        font-size: 0.9em;
-    }
+@media (max-width: 767.98px) {
     .summary-metrics {
         flex-direction: column; /* Tumpuk ke bawah di layar kecil */
     }
