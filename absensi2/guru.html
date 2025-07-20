@@ -382,6 +382,7 @@ function resumeScanner() {
 }
 
 // Ganti logika di dalam event listener 'confirmButton'
+
 document.getElementById('confirmButton').addEventListener('click', async () => {
     const confirmButton = document.getElementById('confirmButton');
     const studentName = document.getElementById('studentName').textContent;
@@ -394,7 +395,7 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
         if (siswaSnapshot.empty) throw new Error("Data siswa tidak ditemukan.");
         const siswaData = siswaSnapshot.docs[0].data();
         const { nisn, kelas } = siswaData;
-        const statusAbsen = document.getElementById('attendanceStatus').textContent;
+        const statusAbsen = document.getElementById('attendanceStatus').textContent; // Ini adalah "Masuk" atau "Pulang"
 
         const today = new Date();
         const tglString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
@@ -410,18 +411,15 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
             batch.set(absensiSiswaRef, {
                 nisn, nama: siswaData.nama, kelas, tanggal: tglString,
                 jamMasuk: firebase.firestore.FieldValue.serverTimestamp(),
-                jamPulang: null, status: 'Hadir'
+                jamPulang: null, status: 'Hadir' // Status di absensi_harian tetap 'Hadir'
             }, { merge: true });
 
             // Cek apakah rekap kelas hari ini sudah ada
             const rekapDoc = await rekapKelasRef.get();
             if (!rekapDoc.exists) {
-                // Jika belum ada, ini scan pertama untuk kelas ini hari ini
-                // Ambil total siswa untuk inisialisasi
                 const siswaKelasSnapshot = await db.collection('siswa').where('kelas', '==', kelas).where('status', '==', 'Aktif').get();
                 const totalSiswaDiKelas = siswaKelasSnapshot.size;
 
-                // Buat dokumen rekap dengan nilai awal
                 batch.set(rekapKelasRef, {
                     totalSiswa: totalSiswaDiKelas,
                     hadir: 1,
@@ -429,7 +427,6 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
                     pulang: 0, sakit: 0, izin: 0, alpha: 0
                 });
             } else {
-                // Jika sudah ada, cukup update angkanya
                 batch.update(rekapKelasRef, {
                     hadir: firebase.firestore.FieldValue.increment(1),
                     belumAbsen: firebase.firestore.FieldValue.increment(-1)
@@ -446,14 +443,26 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
             });
         }
         
-        await batch.commit();
+        await batch.commit(); // Simpan ke Firebase Firestore
+
+        // --- PENTING: PANGGIL FUNGSI UNTUK KIRIM DATA KE GOOGLE SHEET ---
+        await kirimDataAbsensiKeSheet(nisn, statusAbsen); 
+        // NISN dan statusAbsen ("Masuk" atau "Pulang") dikirim ke Apps Script
 
         $('#confirmModal').modal('hide');
-        Toastify({ text: `Absensi ${statusAbsen} untuk ${siswaData.nama} berhasil!`, /* ... style ... */ }).showToast();
-        await updateQuickDashboard();
+        Toastify({ text: `Absensi ${statusAbsen} untuk ${siswaData.nama} berhasil!`, duration: 3000, gravity: "top", position: "center", style: { background: "#4CAF50" } }).showToast();
+        await updateQuickDashboard(); // Perbarui tampilan dashboard
+        resumeScanner(); // Lanjutkan scanner setelah sukses
 
     } catch (error) {
-        alert("Gagal menyimpan: " + error.message);
+        Toastify({
+            text: "Gagal menyimpan: " + error.message,
+            duration: 3000,
+            gravity: "top",
+            position: "center",
+            style: { background: "#dc3545" } // Merah
+        }).showToast();
+        //alert("Gagal menyimpan: " + error.message); // Ganti dengan Toastify
     } finally {
         confirmButton.disabled = false;
         confirmButton.innerHTML = '✅ Lanjutkan';
@@ -1107,7 +1116,7 @@ async function saveUnscanned(e) {
     const absensiData = Array.from(selections).map(select => ({ nisn: select.dataset.nisn, status: select.value })).filter(item => item.status !== "");
     
     if (absensiData.length === 0) {
-        alert('Tidak ada status yang dipilih untuk disimpan.');
+        Toastify({ text: 'Tidak ada status yang dipilih untuk disimpan.', duration: 3000, gravity: "top", position: "center", style: { background: "#ffc107" } }).showToast();
         button.disabled = false; button.innerHTML = '<i class="fas fa-save"></i> Simpan Semua';
         return;
     }
@@ -1133,16 +1142,19 @@ async function saveUnscanned(e) {
             });
         }
 
-        absensiData.forEach(absen => {
+        for (const absen of absensiData) { // Gunakan for...of untuk async/await jika ada
             const siswaInfo = siswaMap.get(absen.nisn);
             if (siswaInfo) {
-                const logRef = db.collection('log_absensi').doc();
+                const logRef = db.collection('log_absensi').doc(); // Membuat ID dokumen baru
                 const fieldToIncrement = absen.status === 'Tanpa Keterangan' ? 'alpha' : absen.status.toLowerCase();
 
                 // 1. Simpan ke log_absensi (untuk jejak audit & fitur edit)
                 batch.set(logRef, {
-                    nisn: siswaInfo.nisn, nama: siswaInfo.nama, kelas: siswaInfo.kelas,
-                    status: absen.status, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    nisn: siswaInfo.nisn,
+                    nama: siswaInfo.nama,
+                    kelas: siswaInfo.kelas,
+                    status: absen.status, // Ini adalah "Sakit", "Izin", "Tanpa Keterangan"
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 // 2. Update rekap harian
@@ -1154,7 +1166,7 @@ async function saveUnscanned(e) {
                 // 3. Update rekap bulanan dengan rincian
                 const rekapBulananRef = db.collection('rekap_bulanan').doc(`${siswaInfo.nisn}_${year}-${month}`);
                 const detailAbsen = {
-                    tanggal: tglString,
+                    tanggal: tglString, // Gunakan tglString hari ini
                     status: absen.status,
                     logId: logRef.id
                 };
@@ -1162,19 +1174,49 @@ async function saveUnscanned(e) {
                 batch.update(rekapBulananRef, {
                     absensi: firebase.firestore.FieldValue.arrayUnion(detailAbsen)
                 });
+
+                // --- PENTING: PANGGIL FUNGSI UNTUK KIRIM DATA KE GOOGLE SHEET ---
+                // Panggil di sini agar setiap absensi yang disimpan memicu notifikasi
+                await kirimDataAbsensiKeSheet(siswaInfo.nisn, absen.status);
             }
-        });
+        }
         
-        await batch.commit();
+        await batch.commit(); // Commit semua operasi batch
+
         Toastify({ text: 'Data berhasil disimpan!', duration: 3000, gravity: "top", position: "center", style: { background: "#4CAF50" } }).showToast();
-        // mainContentArea.innerHTML = '';
-        // await updateQuickDashboard();
-        showQuickSummary(); 
+        showQuickSummary(); // Kembali ke ringkasan
+
     } catch (error) {
-        alert("Gagal menyimpan: " + error.message);
+        Toastify({ text: `Gagal menyimpan: ${error.message}`, duration: 3000, gravity: "top", position: "center", style: { background: "#dc3545" } }).showToast();
     } finally {
         button.disabled = false;
         button.innerHTML = '<i class="fas fa-save"></i> Simpan Semua';
+    }
+}
+
+// --- Fungsi untuk mengirim data absensi ke Google Apps Script (Web App) ---
+async function kirimDataAbsensiKeSheet(nisn, statusAbsensi) {
+    const urlAppsScript = "https://script.google.com/macros/s/AKfycbyyONeSP3M6hy01LSJ9m7SS8meW4S9x4DNXkuFgr7KDDTymWj4lzTAB6_Xfcr5Mgt2S/exec"; // GANTI DENGAN URL WEB APP ANDA DARI BAGIAN `doPost`
+    const dataToSend = {
+        nisn: nisn,
+        statusAbsensi: statusAbsensi // Ini akan menjadi 'Masuk' atau 'Pulang'
+    };
+
+    try {
+        const response = await fetch(urlAppsScript, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSend)
+        });
+        const result = await response.text(); // Ambil respons sebagai teks
+        console.log('Respons dari Apps Script (kirimDataAbsensiKeSheet):', result);
+        // Toastify bisa ditambahkan di sini jika perlu konfirmasi ke user
+        Toastify({ text: "Notifikasi WA diproses.", duration: 2000, style: { background: "#2196F3" } }).showToast();
+    } catch (error) {
+        console.error('Error saat mengirim data ke Apps Script:', error);
+        Toastify({ text: "Gagal memicu notifikasi WA.", duration: 3000, style: { background: "#ff5722" } }).showToast();
     }
 }
 
