@@ -205,6 +205,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         loginContainer.style.display = 'none';
         mainContainer.style.display = 'flex'; // Menggunakan flex untuk sidebar layout
+        console.log('Main container display set to:', mainContainer.style.display); // LOG INI PENTING
+
         welcomeMessage.innerHTML = `Selamat Datang, <strong>${currentUser.name}</strong>!`;
 
         // Atur visibilitas menu sidebar berdasarkan peran
@@ -214,8 +216,10 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         sidebarArchiveLink.style.display = (currentUser.role === 'admin' || currentUser.role === 'walikelas' || currentUser.role === 'mapel') ? 'block' : 'none';
 
         // Panggil fungsi untuk mengisi quick dashboard setelah login
-        await updateQuickDashboard();
+        // await updateQuickDashboard(); // Baris ini tidak lagi diperlukan karena showQuickSummary akan memanggil renderDailySummary
         showQuickSummary(); // Tampilkan ringkasan cepat secara default
+        console.log('showQuickSummary() function called after login.'); // LOG INI PENTING
+
 
     } catch (error) {
         loginError.textContent = error.message;
@@ -473,12 +477,16 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
 // --- FUNGSI TAMPILAN KONTEN UTAMA ---
 // =================================================================
 function showQuickSummary() {
-    dashboardContentArea.style.display = 'block'; // Pastikan area dashboard terlihat
-    mainContentArea.style.display = 'none'; // Sembunyikan area konten lainnya (rekap, form)
+    console.log('Entering showQuickSummary()...'); // Debug
+    dashboardContentArea.style.display = 'block';
+    mainContentArea.style.display = 'none';
+    dailySummaryDisplay.style.display = 'block';
+    console.log('dashboardContentArea display:', dashboardContentArea.style.display); // Debug
+    console.log('mainContentArea display (should be none):', mainContentArea.style.display); // Debug
+    console.log('dailySummaryDisplay display:', dailySummaryDisplay.style.display); // Debug
 
-    dailySummaryDisplay.style.display = 'block'; // Tampilkan Ringkasan Harian
-
-    renderDailySummary(); // Panggil fungsi render khusus ringkasan harian
+    renderDailySummary();
+    console.log('Leaving showQuickSummary(). renderDailySummary() was called.'); // Debug
 }
 
 
@@ -702,10 +710,13 @@ async function updateQuickDashboard() {
 // =================================================================
 
 async function renderDailySummary() {
+    console.log('Entering renderDailySummary()...'); // Debug
     dailySummaryDisplay.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Memuat ringkasan...</div>';
 
     const today = new Date();
     const tglString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    console.log('Fetching summary for date:', tglString); // Debug
+
 
     try {
         let html = '';
@@ -824,6 +835,8 @@ async function renderDailySummary() {
         }
 
         dailySummaryDisplay.innerHTML = html;
+        console.log('HTML content set for dailySummaryDisplay. First 200 chars:', html.substring(0, 200)); // Debug
+        console.log('Leaving renderDailySummary().'); // Debug
 
     } catch (error) {
         console.error("Error rendering daily summary:", error);
@@ -850,59 +863,78 @@ async function fetchRekap(semester) {
             siswaQuery = siswaQuery.where('kelas', '==', currentUser.kelasDiampu);
         }
         const siswaSnapshot = await siswaQuery.get();
-        
-        const siswaNisnList = [];
-        const rekapSiswa = {};
+
+        // Ubah ini: rekapSiswa akan menjadi objek yang mengelompokkan siswa berdasarkan kelas
+        const rekapSiswaByClass = {};
+
         siswaSnapshot.forEach(doc => {
             const siswa = doc.data();
-            siswaNisnList.push(siswa.nisn);
-            rekapSiswa[siswa.nisn] = { ...siswa, total: { sakit: 0, izin: 0, alpha: 0 }, detailUntukEdit: [] };
+            if (!rekapSiswaByClass[siswa.kelas]) {
+                rekapSiswaByClass[siswa.kelas] = [];
+            }
+            // Tambahkan siswa ke dalam array kelasnya
+            rekapSiswaByClass[siswa.kelas].push({ ...siswa, total: { sakit: 0, izin: 0, alpha: 0 }, detailUntukEdit: [] });
         });
 
-        if (siswaNisnList.length === 0) {
+        if (Object.keys(rekapSiswaByClass).length === 0) { // Cek apakah ada siswa
             rekapContentDiv.innerHTML = '<div class="alert alert-info">Tidak ada siswa untuk ditampilkan.</div>';
             return;
+        }
+
+        // Kumpulkan semua NISN dari semua kelas untuk kueri rekap bulanan
+        const allNisnList = [];
+        for (const kelas in rekapSiswaByClass) {
+            rekapSiswaByClass[kelas].forEach(siswa => {
+                allNisnList.push(siswa.nisn);
+            });
         }
 
         const rekapPromises = [];
         const currentYear = new Date().getFullYear();
         const startMonth = semester === 1 ? 7 : 1;
         const endMonth = semester === 1 ? 12 : 6;
-        
-        // Memecah daftar siswa menjadi kelompok berisi maksimal 10
-        for (let i = 0; i < siswaNisnList.length; i += 10) { // <-- DIUBAH DARI 30 MENJADI 10
-            const chunk = siswaNisnList.slice(i, i + 10);
+
+        // Memecah daftar NISN menjadi kelompok berisi maksimal 10
+        for (let i = 0; i < allNisnList.length; i += 10) {
+            const chunk = allNisnList.slice(i, i + 10);
             rekapPromises.push(
                 db.collection('rekap_bulanan')
-                  .where('nisn', 'in', chunk)
-                  .where('tahun', '==', currentYear)
-                  .where('bulan', '>=', startMonth)
-                  .where('bulan', '<=', endMonth)
-                  .get()
+                    .where('nisn', 'in', chunk)
+                    .where('tahun', '==', currentYear)
+                    .where('bulan', '>=', startMonth)
+                    .where('bulan', '<=', endMonth)
+                    .get()
             );
         }
         const rekapSnapshots = await Promise.all(rekapPromises);
-        
+
         rekapSnapshots.forEach(rekapSnapshot => {
             rekapSnapshot.forEach(doc => {
                 const rekapData = doc.data();
-                if (rekapSiswa[rekapData.nisn] && rekapData.absensi) {
-                    rekapData.absensi.forEach(absen => {
-                        if (absen.status === 'Sakit') rekapSiswa[rekapData.nisn].total.sakit++;
-                        if (absen.status === 'Izin') rekapSiswa[rekapData.nisn].total.izin++;
-                        if (absen.status === 'Tanpa Keterangan') rekapSiswa[rekapData.nisn].total.alpha++;
-                        
-                        rekapSiswa[rekapData.nisn].detailUntukEdit.push({
-                            docId: absen.logId,
-                            tanggal: absen.tanggal,
-                            status: absen.status
+                // Cari siswa yang sesuai di dalam rekapSiswaByClass
+                // Ini memerlukan iterasi yang lebih efisien atau struktur data yang lebih baik
+                // Untuk sederhana, kita akan cari dulu kelasnya, lalu siswanya
+                if (rekapSiswaByClass[rekapData.kelas]) {
+                    const siswaIndex = rekapSiswaByClass[rekapData.kelas].findIndex(s => s.nisn === rekapData.nisn);
+                    if (siswaIndex !== -1 && rekapData.absensi) {
+                        rekapData.absensi.forEach(absen => {
+                            if (absen.status === 'Sakit') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.sakit++;
+                            if (absen.status === 'Izin') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.izin++;
+                            if (absen.status === 'Tanpa Keterangan') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.alpha++;
+
+                            rekapSiswaByClass[rekapData.kelas][siswaIndex].detailUntukEdit.push({
+                                docId: absen.logId,
+                                tanggal: absen.tanggal,
+                                status: absen.status
+                            });
                         });
-                    });
+                    }
                 }
             });
         });
 
-        fullRekapData = Object.values(rekapSiswa);
+        // Simpan data yang sudah dikelompokkan berdasarkan kelas
+        fullRekapData = rekapSiswaByClass;
         renderRekapTableContent();
 
     } catch (error) {
@@ -911,57 +943,61 @@ async function fetchRekap(semester) {
     }
 }
 
-
 // Fungsi baru untuk merender konten rekap semester (tabel atau accordion kelas)
 function renderRekapTableContent() {
-    // Ambil ID div rekap yang sedang aktif berdasarkan tab yang dipilih
     const activeTab = document.querySelector('#semesterPills .nav-link.active');
-    const semesterNumber = activeTab ? (activeTab.id === 'semester1-tab' ? 1 : 2) : 1; // Default ke 1 jika tidak ada tab aktif
+    const semesterNumber = activeTab ? (activeTab.id === 'semester1-tab' ? 1 : 2) : 1;
 
     const rekapContentDiv = document.getElementById('rekap-content-semester' + semesterNumber);
     if (!rekapContentDiv) {
         console.error('Target rekap content div (rekap-content-semester' + semesterNumber + ') tidak ditemukan saat merender.');
-        return; 
+        return;
     }
 
     let html = '';
     if (currentUser.role === 'walikelas') {
-        // Untuk walikelas, langsung tampilkan tabel kelasnya
-        html += renderTable(fullRekapData, `Rekap Kelas: ${currentUser.kelasDiampu}`);
+        // Untuk walikelas, fullRekapData[currentUser.kelasDiampu] akan menjadi array siswa
+        // Namun, di fetchRekap, kita sudah membuat fullRekapData sebagai objek by class
+        // Jadi, untuk walikelas, kita perlu mengaksesnya sebagai fullRekapData[currentUser.kelasDiampu]
+        const walikelasData = fullRekapData[currentUser.kelasDiampu] || [];
+        html += renderTable(walikelasData, `Rekap Kelas: ${currentUser.kelasDiampu}`);
     } else {
-        // Untuk admin/mapel, tampilkan tab navigasi per kelas (jika ada) atau langsung accordion
-        // Kita tetap menggunakan accordion seperti yang ada di quick dashboard, tapi tanpa tombol togglenya.
-        // Judul "Detail Absensi Per Kelas" tetap ada.
-
         html += `
             <div class="card card-body mt-3"> <h5 class="card-title mb-3"><i class="fas fa-chalkboard-teacher"></i> Rekap Absensi Per Kelas</h5>
                 <div class="accordion" id="rekapClassAccordion"> `;
 
-        // Urutkan kelas secara numerik (asumsi nama kelas "Kelas 1", "Kelas 2", dst.)
+        // Urutkan kelas secara numerik
         const kelasKeys = Object.keys(fullRekapData).sort((a, b) => {
-            const numA = parseInt(a.replace(/\D/g, ''));
-            const numB = parseInt(b.replace(/\D/g, ''));
+            // Perbaikan untuk memastikan perbandingan numerik pada nama kelas
+            const numA = parseInt(a.replace(/[^0-9]/g, '')); // Ekstrak hanya angka
+            const numB = parseInt(b.replace(/[^0-9]/g, ''));
+            if (isNaN(numA) || isNaN(numB)) { // Jika bukan angka (misal "SD"), gunakan perbandingan string
+                return a.localeCompare(b);
+            }
             return numA - numB;
         });
+
 
         if (kelasKeys.length === 0) {
             html += '<div class="alert alert-info">Tidak ada data siswa untuk semester ini.</div>';
         } else {
-            kelasKeys.forEach((kelas, index) => {
+            kelasKeys.forEach((kelas) => { // Hapus index karena tidak digunakan
                 const classId = kelas.replace(/\s+/g, '');
+                // Akses array siswa untuk kelas tertentu dari fullRekapData
+                const dataForClass = fullRekapData[kelas]; // <--- SUDAH BENAR SEKARANG
                 html += `
                     <div class="card class-accordion-item">
                         <div class="card-header" id="headingRekap${classId}">
                             <h2 class="mb-0">
                                 <button class="btn btn-block text-left d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#collapseRekap${classId}" aria-expanded="false" aria-controls="collapseRekap${classId}">
-                                    Kelas ${kelas} 
+                                    Kelas ${kelas}
                                     <i class="fas fa-chevron-down accordion-icon"></i>
                                 </button>
                             </h2>
                         </div>
                         <div id="collapseRekap${classId}" class="collapse" aria-labelledby="headingRekap${classId}" data-parent="#rekapClassAccordion">
                             <div class="card-body">
-                                ${renderTable(fullRekapData[kelas], `Rekap Kelas: ${kelas}`)}
+                                ${renderTable(dataForClass, `Rekap Kelas: ${kelas}`)}
                             </div>
                         </div>
                     </div>
@@ -1006,11 +1042,14 @@ function toggleDetails(nisn) {
 }
 
 function findSiswaByNisn(nisn) {
-    if(Array.isArray(fullRekapData)) return fullRekapData.find(s => s.nisn === nisn);
-    for(const kelas in fullRekapData) {
-        const siswa = fullRekapData[kelas].find(s => s.nisn === nisn);
-        if (siswa) return siswa;
+    // Loop melalui setiap array siswa di setiap kelas
+    for (const kelas in fullRekapData) {
+        if (Array.isArray(fullRekapData[kelas])) { // Pastikan itu array
+            const siswa = fullRekapData[kelas].find(s => s.nisn === nisn);
+            if (siswa) return siswa;
+        }
     }
+    return null; // Jika tidak ditemukan
 }
 
 function renderDetailContent(siswa) {
@@ -1194,29 +1233,37 @@ async function saveUnscanned(e) {
     }
 }
 
-// --- Fungsi untuk mengirim data absensi ke Google Apps Script (Web App) ---
+// --- FUNGSI UNTUK MENGIRIM DATA KE GOOGLE APPS SCRIPT (WEB APP) ---
+// Mengadopsi metode FormData seperti yang berhasil di form kontak Anda
 async function kirimDataAbsensiKeSheet(nisn, statusAbsensi) {
-    const urlAppsScript = "https://script.google.com/macros/s/AKfycbyyONeSP3M6hy01LSJ9m7SS8meW4S9x4DNXkuFgr7KDDTymWj4lzTAB6_Xfcr5Mgt2S/exec"; // GANTI DENGAN URL WEB APP ANDA DARI BAGIAN `doPost`
-    const dataToSend = {
-        nisn: nisn,
-        statusAbsensi: statusAbsensi // Ini akan menjadi 'Masuk' atau 'Pulang'
-    };
+    const urlAppsScript = "https://script.google.com/macros/s/AKfycbxcAr6Zq7u2ENykUbUhqCn4d92UNoG1OFj8IS1rbKpoW8Gpxal--y3tgyGmbdoMMKZFmw/exec"; // GANTI DENGAN URL WEB APP ANDA DARI BAGIAN `doPost`
+    
+    // Buat objek FormData baru
+    const formData = new FormData();
+    formData.append('nisn', nisn);
+    formData.append('statusAbsensi', statusAbsensi);
+    // Jika Anda ingin mengirim data lain dari siswa, tambahkan di sini juga
+    // formData.append('namaSiswa', namaSiswa); 
+    // formData.append('kelasSiswa', kelasSiswa); 
+    // formData.append('waktuAbsen', waktuAbsen); // Waktu absen bisa diambil di Apps Script
+    // Karena Apps Script akan melakukan VLOOKUP, cukup NISN dan StatusAbsensi
 
     try {
         const response = await fetch(urlAppsScript, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dataToSend)
+            body: formData // Menggunakan FormData
+            // Hapus 'headers' jika menggunakan FormData, karena browser otomatis mengaturnya
+            // headers: {
+            //     'Content-Type': 'application/json' 
+            // }
         });
-        const result = await response.text(); // Ambil respons sebagai teks
+        const result = await response.text(); 
         console.log('Respons dari Apps Script (kirimDataAbsensiKeSheet):', result);
         // Toastify bisa ditambahkan di sini jika perlu konfirmasi ke user
-        Toastify({ text: "Notifikasi WA diproses.", duration: 2000, style: { background: "#2196F3" } }).showToast();
+        // Toastify({ text: "Notifikasi WA diproses.", duration: 2000, style: { background: "#2196F3" } }).showToast();
     } catch (error) {
         console.error('Error saat mengirim data ke Apps Script:', error);
-        Toastify({ text: "Gagal memicu notifikasi WA.", duration: 3000, style: { background: "#ff5722" } }).showToast();
+        // Toastify({ text: "Gagal memicu notifikasi WA.", duration: 3000, style: { background: "#ff5722" } }).showToast();
     }
 }
 
