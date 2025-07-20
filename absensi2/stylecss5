@@ -545,6 +545,11 @@ body {
         flex: 1 1 45%;
     }
 
+    /* Tinggi grafik di mobile */
+    .chart-container {
+        height: 250px;
+    }
+
     /* Responsivitas untuk tombol tab di rekap semester */
     /* Ini sudah benar dan saya pindahkan ke dalam blok media query utama */
     #semesterPills {
@@ -560,6 +565,35 @@ body {
     }
 }
 
+/* =================================================================
+   GAYA UNTUK GRAFIK (Chart.js)
+   Tambahkan ini jika Anda sudah menambahkan canvas untuk grafik, agar tidak terhapus.
+   Jika belum, ini bisa diabaikan atau dihapus untuk sementara.
+   ================================================================= */
+.chart-section {
+    background-color: var(--white-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.chart-section .chart-title {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px; /* Atur tinggi grafik */
+    width: 100%;
+}
 
 /* =================================================================
    FIX: TOMBOL TOGGLE SIDEBAR DI MOBILE (PERBAIKAN ANIMASI)
@@ -581,4 +615,3 @@ body {
 #sidebar.active + #content .toggle-button-fixed {
     left: 265px; /* Lebar sidebar (250px) + padding kiri (15px) */
 }
-
