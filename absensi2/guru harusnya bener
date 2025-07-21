@@ -13,30 +13,15 @@
 <body class="portal-body">
  
     <div class="container mt-4 mb-4" id="login-container">
-    <div class="card shadow-lg border-0 rounded-xl p-4 p-md-5 mx-auto" style="max-width: 500px; width: 100%;"> 
+    <div class="card">
         <div class="card-body">
-            <div class="back-link-container text-center mb-4">
-                <a href="index.html" class="text-muted text-decoration-none d-inline-flex align-items-center">
-                    <i class="fas fa-arrow-left mr-2"></i> Kembali ke Halaman Utama
-                </a>
-            </div>
-            <h3 class="card-title-centered text-primary font-weight-bolder mb-4">
-                <i class="fas fa-chalkboard-teacher mr-2"></i> Portal Guru & Staf
-            </h3>
-            <p class="text-center text-muted mb-4">Silakan login untuk mengakses fitur absensi dan laporan.</p>
+            <div class="back-link-container"><a href="index.html" class="text-muted">&larr; Kembali ke Halaman Utama</a></div>
+            <h3 class="card-title-centered">Portal Guru & Staf</h3>
             <form id="loginForm">
-                <div class="form-group mb-3">
-                    <label for="username" class="font-weight-bold text-dark">Username:</label>
-                    <input type="text" id="username" name="username" class="form-control form-control-lg rounded-pill px-4" placeholder="Masukkan Username Anda" required>
-                </div>
-                <div class="form-group mb-4">
-                    <label for="password" class="font-weight-bold text-dark">Password:</label>
-                    <input type="password" id="password" name="password" class="form-control form-control-lg rounded-pill px-4" placeholder="Masukkan Password Anda" required>
-                </div>
-                <button type="submit" id="loginButton" class="btn btn-primary btn-lg btn-block rounded-pill shadow-md font-weight-bold mt-4">
-                    Login <i class="fas fa-sign-in-alt ml-2"></i>
-                </button> 
-                <div id="login-error" class="alert alert-danger mt-3 text-center" style="display:none;"></div>
+                <div class="form-group"><label for="username">Username:</label><input type="text" id="username" name="username" class="form-control" required></div>
+                <div class="form-group"><label for="password">Password:</label><input type="password" id="password" name="password" class="form-control" required></div>
+                <button type="submit" id="loginButton" class="btn btn-primary btn-block">Login</button>
+                <div id="login-error" class="alert alert-danger mt-3" style="display:none;"></div>
             </form>
         </div>
     </div>
@@ -65,8 +50,8 @@
                 <ul class="collapse list-unstyled show" id="attendanceSubmenu">
                     <li><a href="#" id="sidebar-scan-absensi"><i class="fas fa-qrcode"></i> Scan Absensi</a></li>
                     <li id="sidebar-unscanned-link"><a href="#" id="sidebar-unscanned-btn"><i class="fas fa-user-clock"></i> Siswa Tidak Hadir</a></li>
-                    <li id="sidebar-manual-link"><a href="#" id="sidebar-manual-input-btn"><i class="fas fa-edit"></i> Input Manual</a></li>
                     <li id="sidebar-daily-correction-link"><a href="#" id="sidebar-daily-correction-btn"><i class="fas fa-sync-alt"></i> Koreksi Ketidakhadiran</a></li>
+                    <li id="sidebar-manual-link"><a href="#" id="sidebar-manual-input-btn"><i class="fas fa-edit"></i> Input Manual</a></li>
                 </ul>
             </li>
         </ul>
@@ -261,7 +246,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         loginContainer.style.display = 'none';
         mainContainer.style.display = 'flex'; // Menggunakan flex untuk sidebar layout
-        await showQuickSummary(); // Tampilkan ringkasan cepat secara default
         console.log('Main container display set to:', mainContainer.style.display); // LOG INI PENTING
 
         welcomeMessage.innerHTML = `Selamat Datang, <strong>${currentUser.name}</strong>!`;
@@ -272,8 +256,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         // UBAH BARIS INI: Tambahkan '|| currentUser.role === 'mapel''
         sidebarArchiveLink.style.display = (currentUser.role === 'admin' || currentUser.role === 'walikelas' || currentUser.role === 'mapel') ? 'block' : 'none';
         sidebarDailyCorrectionLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
-        
-        
+        showQuickSummary(); // Tampilkan ringkasan cepat secara default
 
     } catch (error) {
         loginError.textContent = error.message;
@@ -776,7 +759,6 @@ async function updateQuickDashboard() {
 
 async function renderDailySummary() {
     console.log('Entering renderDailySummary()...'); // Debug
-    dailySummaryDisplay.style.display = 'block'; // <<< TAMBAHKAN BARIS INI
     dailySummaryDisplay.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Memuat ringkasan...</div>';
 
     const today = new Date();
