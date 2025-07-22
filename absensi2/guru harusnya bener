@@ -13,15 +13,30 @@
 <body class="portal-body">
  
     <div class="container mt-4 mb-4" id="login-container">
-    <div class="card">
+    <div class="card shadow-lg border-0 rounded-xl p-4 p-md-5 mx-auto" style="max-width: 500px; width: 100%;"> 
         <div class="card-body">
-            <div class="back-link-container"><a href="index.html" class="text-muted">&larr; Kembali ke Halaman Utama</a></div>
-            <h3 class="card-title-centered">Portal Guru & Staf</h3>
+            <div class="back-link-container text-center mb-4">
+                <a href="index.html" class="text-muted text-decoration-none d-inline-flex align-items-center">
+                    <i class="fas fa-arrow-left mr-2"></i> Kembali ke Halaman Utama
+                </a>
+            </div>
+            <h3 class="card-title-centered text-primary font-weight-bolder mb-4">
+                <i class="fas fa-chalkboard-teacher mr-2"></i> Portal Guru & Staf
+            </h3>
+            <p class="text-center text-muted mb-4">Silakan login untuk mengakses fitur absensi dan laporan.</p>
             <form id="loginForm">
-                <div class="form-group"><label for="username">Username:</label><input type="text" id="username" name="username" class="form-control" required></div>
-                <div class="form-group"><label for="password">Password:</label><input type="password" id="password" name="password" class="form-control" required></div>
-                <button type="submit" id="loginButton" class="btn btn-primary btn-block">Login</button>
-                <div id="login-error" class="alert alert-danger mt-3" style="display:none;"></div>
+                <div class="form-group mb-3">
+                    <label for="username" class="font-weight-bold text-dark">Username:</label>
+                    <input type="text" id="username" name="username" class="form-control form-control-lg rounded-pill px-4" placeholder="Masukkan Username Anda" required>
+                </div>
+                <div class="form-group mb-4">
+                    <label for="password" class="font-weight-bold text-dark">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control form-control-lg rounded-pill px-4" placeholder="Masukkan Password Anda" required>
+                </div>
+                <button type="submit" id="loginButton" class="btn btn-primary btn-lg btn-block rounded-pill shadow-md font-weight-bold mt-4">
+                    Login <i class="fas fa-sign-in-alt ml-2"></i>
+                </button> 
+                <div id="login-error" class="alert alert-danger mt-3 text-center" style="display:none;"></div>
             </form>
         </div>
     </div>
@@ -40,6 +55,8 @@
                 </a>
                 <ul class="collapse list-unstyled show" id="dashboardSubmenu">
                     <li><a href="#" id="sidebar-quick-summary"><i class="fas fa-chart-line"></i> Ringkasan Hari Ini</a></li>
+                    <li><a href="#" id="sidebar-rekap-harian"><i class="fas fa-calendar-day"></i> Rekap Harian</a></li>
+                    <li><a href="#" id="sidebar-cek-usia"><i class="fas fa-birthday-cake"></i> Cek Usia Siswa</a></li>
                     <li><a href="#" id="sidebar-rekap-semester"><i class="fas fa-chart-bar"></i> Rekap Per Semester</a></li>
                 </ul>
             </li>
@@ -50,8 +67,8 @@
                 <ul class="collapse list-unstyled show" id="attendanceSubmenu">
                     <li><a href="#" id="sidebar-scan-absensi"><i class="fas fa-qrcode"></i> Scan Absensi</a></li>
                     <li id="sidebar-unscanned-link"><a href="#" id="sidebar-unscanned-btn"><i class="fas fa-user-clock"></i> Siswa Tidak Hadir</a></li>
-                    <li id="sidebar-daily-correction-link"><a href="#" id="sidebar-daily-correction-btn"><i class="fas fa-sync-alt"></i> Koreksi Ketidakhadiran</a></li>
                     <li id="sidebar-manual-link"><a href="#" id="sidebar-manual-input-btn"><i class="fas fa-edit"></i> Input Manual</a></li>
+                    <li id="sidebar-daily-correction-link"><a href="#" id="sidebar-daily-correction-btn"><i class="fas fa-sync-alt"></i> Koreksi Ketidakhadiran</a></li>
                 </ul>
             </li>
         </ul>
@@ -155,7 +172,9 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="YOUR_SCRIPT_FILE.js"></script>
 <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -198,6 +217,7 @@ const sidebarOverlay = document.getElementById('sidebar-overlay'); // REFERENSI 
 const sidebarDailyCorrectionLink = document.getElementById('sidebar-daily-correction-link');
 
 
+
 // Referensi tombol di sidebar
 document.getElementById('sidebar-quick-summary').addEventListener('click', () => {
     showQuickSummary();
@@ -220,6 +240,15 @@ document.getElementById('sidebar-daily-correction-btn').addEventListener('click'
 document.getElementById('sidebar-logout').addEventListener('click', () => {
     logout();
 });
+document.getElementById('sidebar-rekap-harian').addEventListener('click', (e) => {
+    e.preventDefault();
+    showDailyRecapView();
+});
+document.getElementById('sidebar-cek-usia').addEventListener('click', (e) => {
+    e.preventDefault();
+    showCekUsiaView();
+});
+
 
 // --- Logika Login ---
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -246,17 +275,26 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
         loginContainer.style.display = 'none';
         mainContainer.style.display = 'flex'; // Menggunakan flex untuk sidebar layout
+        await showQuickSummary(); // Tampilkan ringkasan cepat secara default
         console.log('Main container display set to:', mainContainer.style.display); // LOG INI PENTING
 
         welcomeMessage.innerHTML = `Selamat Datang, <strong>${currentUser.name}</strong>!`;
 
         // Atur visibilitas menu sidebar berdasarkan peran
-        sidebarUnscannedLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
-        sidebarManualLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
-        // UBAH BARIS INI: Tambahkan '|| currentUser.role === 'mapel''
-        sidebarArchiveLink.style.display = (currentUser.role === 'admin' || currentUser.role === 'walikelas' || currentUser.role === 'mapel') ? 'block' : 'none';
-        sidebarDailyCorrectionLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
-        showQuickSummary(); // Tampilkan ringkasan cepat secara default
+        if (sidebarUnscannedLink) {
+            sidebarUnscannedLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
+        }
+        if (sidebarManualLink) {
+            sidebarManualLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
+        }
+        if (sidebarArchiveLink) {
+            sidebarArchiveLink.style.display = (currentUser.role === 'admin' || currentUser.role === 'walikelas' || currentUser.role === 'mapel') ? 'block' : 'none';
+        }
+        if (sidebarDailyCorrectionLink) {
+            sidebarDailyCorrectionLink.style.display = currentUser.role === 'walikelas' ? 'block' : 'none';
+        }
+        
+        
 
     } catch (error) {
         loginError.textContent = error.message;
@@ -517,8 +555,8 @@ document.getElementById('confirmButton').addEventListener('click', async () => {
         resumeScanner(); 
     } finally {
         // Karena modal sudah disembunyikan dan Toastify sudah muncul, tidak perlu lagi mengubah status tombol di sini.
-        // confirmButton.disabled = false;
-        // confirmButton.innerHTML = '✅ Lanjutkan';
+        confirmButton.disabled = false;
+        confirmButton.innerHTML = '✅ Lanjutkan';
     }
 });
 // =================================================================
@@ -537,49 +575,521 @@ function showQuickSummary() {
     console.log('Leaving showQuickSummary(). renderDailySummary() was called.');
 }
 
-
 function showRekapSemesterSelection() {
-    dashboardContentArea.style.display = 'none'; // Sembunyikan quick dashboard dan grafik
-    mainContentArea.style.display = 'block'; // Tampilkan area rekap
-
-    dailySummaryDisplay.style.display = 'none'; // Sembunyikan ringkasan harian
+    dashboardContentArea.style.display = 'none'; 
+    mainContentArea.style.display = 'block'; 
+    dailySummaryDisplay.style.display = 'none';
 
     mainContentArea.innerHTML = `
         <div id="semester-selection-card" class="card card-body mt-4">
             <h5 class="card-title text-center mb-3">Pilih Semester untuk Melihat Rekap</h5>
-            
             <ul class="nav nav-pills justify-content-center mb-3" id="semesterPills" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="semester1-tab" data-toggle="pill" href="#semester1Content" role="tab" aria-controls="semester1Content" aria-selected="true">Semester 1 (Juli - Des)</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="semester2-tab" data-toggle="pill" href="#semester2Content" role="tab" aria-controls="semester2Content" aria-selected="false">Semester 2 (Jan - Juni)</a>
-                </li>
+                <li class="nav-item"><a class="nav-link active" id="semester1-tab" data-toggle="pill" href="#semester1Content" role="tab">Semester 1 (Juli - Des)</a></li>
+                <li class="nav-item"><a class="nav-link" id="semester2-tab" data-toggle="pill" href="#semester2Content" role="tab">Semester 2 (Jan - Juni)</a></li>
             </ul>
-            
             <div class="tab-content" id="semesterTabContent">
-                <div class="tab-pane fade show active" id="semester1Content" role="tabpanel" aria-labelledby="semester1-tab">
-                    <div id="rekap-content-semester1" class="mt-3"></div>
-                </div>
-                <div class="tab-pane fade" id="semester2Content" role="tabpanel" aria-labelledby="semester2-tab">
-                    <div id="rekap-content-semester2" class="mt-3"></div>
-                </div>
+                <div class="tab-pane fade show active" id="semester1Content" role="tabpanel"><div id="rekap-content-semester1" class="mt-3"></div></div>
+                <div class="tab-pane fade" id="semester2Content" role="tabpanel"><div id="rekap-content-semester2" class="mt-3"></div></div>
             </div>
-
-            </div>
-    `;
-
-    // PENTING: Tambahkan event listener untuk tab agar memanggil fetchRekap saat tab diklik
-    $('#semester1-tab').on('shown.bs.tab', function (e) {
-        fetchRekap(1);
-    });
-    $('#semester2-tab').on('shown.bs.tab', function (e) {
-        fetchRekap(2);
-    });
-
-    // Panggil fetchRekap untuk semester 1 secara default saat halaman dimuat pertama kali
+        </div>`;
+    
+    $('#semester1-tab').on('shown.bs.tab', () => fetchRekap(1));
+    $('#semester2-tab').on('shown.bs.tab', () => fetchRekap(2));
     fetchRekap(1);
 }
+
+// *** FUNGSI BARU UNTUK MENAMPILKAN REKAP HARIAN (REVISI UI/UX + PEMILIH TAHUN) ***
+async function showDailyRecapView() {
+    dashboardContentArea.style.display = 'none';
+    mainContentArea.style.display = 'block';
+
+    // State untuk menyimpan pilihan saat ini
+    let selectedClass = currentUser.role === 'walikelas' ? currentUser.kelasDiampu : null;
+    let currentDate = new Date();
+    let selectorYear = currentDate.getFullYear(); // Tahun yang ditampilkan di panel pemilih
+
+    let classSelectorHtml = '';
+    // Jika admin, siapkan UI untuk memilih kelas
+    if (currentUser.role === 'admin' || currentUser.role === 'mapel') {
+        mainContentArea.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat daftar kelas...</p></div>';
+        try {
+            const snapshot = await db.collection('siswa').where('status', '==', 'Aktif').get();
+            const classes = new Set();
+            snapshot.forEach(doc => classes.add(doc.data().kelas));
+            const sortedClasses = Array.from(classes).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            
+            classSelectorHtml = `
+                <h6 class="text-muted text-center mb-2">Pilih Kelas</h6>
+                <div id="daily-recap-class-selector" class="text-center mb-4">
+                    ${sortedClasses.map(c => `<button class="btn btn-outline-primary m-1 class-btn" data-kelas="${c}">${c}</button>`).join('')}
+                </div>
+                <hr>
+            `;
+        } catch (error) {
+            mainContentArea.innerHTML = `<div class="alert alert-danger">Gagal memuat daftar kelas: ${error.message}</div>`;
+            return;
+        }
+    }
+
+    // Render kerangka utama UI
+    mainContentArea.innerHTML = `
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center"><i class="fas fa-calendar-day"></i> Rekap Absensi Harian</h5>
+                ${classSelectorHtml}
+                
+                <!-- UI Pemilih Bulan dan Tahun -->
+                <div class="month-selector-container" style="position: relative;">
+                    <div class="d-flex justify-content-center align-items-center my-3">
+                        <button id="prev-month-btn" class="btn btn-light btn-lg"><i class="fas fa-chevron-left"></i></button>
+                        <h4 id="current-month-display" class="mx-4 mb-0 font-weight-bold" style="width: 220px; text-align: center; cursor: pointer; user-select: none;" title="Klik untuk memilih bulan dan tahun"></h4>
+                        <button id="next-month-btn" class="btn btn-light btn-lg"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    
+                    <!-- Panel Pemilih Bulan dan Tahun yang Baru -->
+                    <div id="month-year-selector" class="card shadow-lg" style="display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 1000; width: 280px;">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button id="selector-prev-year" class="btn btn-sm btn-outline-secondary">&lt;</button>
+                                <span id="selector-current-year" class="font-weight-bold"></span>
+                                <button id="selector-next-year" class="btn btn-sm btn-outline-secondary">&gt;</button>
+                            </div>
+                            <div id="selector-month-grid" class="row no-gutters">
+                                <!-- Bulan-bulan akan di-generate di sini -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="daily-recap-table-container" class="mt-3"></div>
+            </div>
+        </div>
+    `;
+
+    const monthDisplay = document.getElementById('current-month-display');
+    const tableContainer = document.getElementById('daily-recap-table-container');
+    const monthYearSelector = document.getElementById('month-year-selector');
+    const selectorYearDisplay = document.getElementById('selector-current-year');
+    const monthGrid = document.getElementById('selector-month-grid');
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+
+    // Fungsi untuk membuat grid bulan di panel
+    const generateMonthGrid = () => {
+        selectorYearDisplay.textContent = selectorYear;
+        monthGrid.innerHTML = monthNames.map((name, index) => {
+            const isSelected = (index === currentDate.getMonth() && selectorYear === currentDate.getFullYear());
+            const btnClass = isSelected ? 'btn-primary' : 'btn-light';
+            return `<div class="col-3 p-1"><button class="btn btn-sm btn-block ${btnClass}" data-month="${index}">${name}</button></div>`;
+        }).join('');
+    };
+
+    // Fungsi untuk update tampilan utama dan render tabel
+    const updateDisplayAndRender = () => {
+        monthDisplay.textContent = currentDate.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        if (selectedClass) {
+            renderDailyRecapTable(selectedClass, currentDate.getFullYear(), currentDate.getMonth() + 1);
+        } else {
+            tableContainer.innerHTML = '<p class="text-muted text-center">Silakan pilih kelas untuk melihat rekap.</p>';
+        }
+    };
+
+    // --- Event Listeners ---
+
+    // Navigasi bulan cepat
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateDisplayAndRender();
+    });
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateDisplayAndRender();
+    });
+
+    // Buka/tutup panel pemilih
+    monthDisplay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = monthYearSelector.style.display === 'none';
+        if (isHidden) {
+            selectorYear = currentDate.getFullYear();
+            generateMonthGrid();
+            monthYearSelector.style.display = 'block';
+        } else {
+            monthYearSelector.style.display = 'none';
+        }
+    });
+
+    // Navigasi tahun di dalam panel
+    document.getElementById('selector-prev-year').addEventListener('click', () => {
+        selectorYear--;
+        generateMonthGrid();
+    });
+    document.getElementById('selector-next-year').addEventListener('click', () => {
+        selectorYear++;
+        generateMonthGrid();
+    });
+
+    // Memilih bulan di dalam panel
+    monthGrid.addEventListener('click', (e) => {
+        if (e.target.matches('[data-month]')) {
+            const selectedMonth = parseInt(e.target.dataset.month);
+            currentDate.setFullYear(selectorYear, selectedMonth, 1);
+            monthYearSelector.style.display = 'none';
+            updateDisplayAndRender();
+        }
+    });
+
+    // Menutup panel jika klik di luar
+    window.addEventListener('click', (e) => {
+        if (!monthYearSelector.contains(e.target) && e.target !== monthDisplay) {
+            monthYearSelector.style.display = 'none';
+        }
+    });
+    
+    // Memilih kelas
+    const classSelector = document.getElementById('daily-recap-class-selector');
+    if (classSelector) {
+        classSelector.addEventListener('click', (e) => {
+            if (e.target.classList.contains('class-btn')) {
+                document.querySelectorAll('.class-btn').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+                e.target.classList.remove('btn-outline-primary');
+                e.target.classList.add('btn-primary');
+                selectedClass = e.target.dataset.kelas;
+                updateDisplayAndRender();
+            }
+        });
+    }
+
+    // Panggilan inisialisasi
+    updateDisplayAndRender();
+}
+
+
+
+// *** FUNGSI BARU UNTUK MERENDER TABEL REKAP HARIAN ***
+async function renderDailyRecapTable(className, year, month) {
+    const container = document.getElementById('daily-recap-table-container');
+    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat rekap harian...</p></div>';
+
+    try {
+        // Format ID Dokumen: 'Kelas 1A-2025-7'
+        const docId = `${className}-${year}-${month}`;
+        const docRef = db.collection('agregat_bulanan_kelas').doc(docId);
+        const docSnap = await docRef.get();
+
+        const data = docSnap.exists ? docSnap.data().rekap : {};
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const monthName = new Date(year, month - 1).toLocaleString('id-ID', { month: 'long' });
+
+        let tableHtml = `
+            <h6 class="text-center font-weight-bold">Rekap Kelas ${className} - ${monthName} ${year}</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="min-width: 80px;">Status</th>
+        `;
+
+        // Header Tabel (Tanggal)
+        for (let day = 1; day <= daysInMonth; day++) {
+            tableHtml += `<th>${day}</th>`;
+        }
+        tableHtml += `<th>Jumlah</th></tr></thead><tbody>`;
+
+        // Body Tabel (Data S, I, A)
+        const statuses = ['Sakit', 'Izin', 'Alfa'];
+        const statusKeys = { 'Sakit': 'sakit', 'Izin': 'izin', 'Alfa': 'alfa' };
+        
+        statuses.forEach(status => {
+            let totalStatus = 0;
+            tableHtml += `<tr><th>${status}</th>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayData = data[`tgl_${day}`] || {};
+                const count = dayData[statusKeys[status]] || 0;
+                tableHtml += `<td>${count > 0 ? count : '-'}</td>`;
+                totalStatus += count;
+            }
+            tableHtml += `<td class="font-weight-bold">${totalStatus}</td></tr>`;
+        });
+
+        tableHtml += '</tbody></table></div>';
+        container.innerHTML = tableHtml;
+
+    } catch (error) {
+        console.error("Error rendering daily recap table:", error);
+        container.innerHTML = `<div class="alert alert-danger">Gagal memuat rekap: ${error.message}</div>`;
+    }
+}
+
+// --- FITUR BARU: CEK USIA SISWA ---
+
+function calculateAge(birthDateString, targetDate) {
+    // Parsing tanggal lahir dari format DDMMYYYY
+    const day = parseInt(birthDateString.substring(0, 2), 10);
+    const month = parseInt(birthDateString.substring(2, 4), 10) - 1; // Bulan di JS dari 0-11
+    const year = parseInt(birthDateString.substring(4, 8), 10);
+    const birthDate = new Date(year, month, day);
+
+    let years = targetDate.getFullYear() - birthDate.getFullYear();
+    let months = targetDate.getMonth() - birthDate.getMonth();
+    
+    // Koreksi jika bulan target lebih kecil dari bulan lahir, atau jika bulan sama tapi tanggal lebih kecil
+    if (months < 0 || (months === 0 && targetDate.getDate() < birthDate.getDate())) {
+        years--;
+        // Menghitung sisa bulan dengan benar
+        months = (months + 12) % 12;
+    }
+
+    // Koreksi tambahan jika tanggal di bulan yang sama belum terlewati
+     if (targetDate.getDate() < birthDate.getDate() && months === 0) {
+        // Jika di bulan yang sama tapi tanggal belum lewat, umur bulan harusnya 11
+        months = 11;
+    } else if (targetDate.getDate() < birthDate.getDate()) {
+        // Jika tanggal belum lewat di bulan berbeda, kurangi 1 bulan
+        months--;
+    }
+
+
+    return { years, months };
+}
+
+
+async function renderCekUsiaTable(className, year, month) {
+    const container = document.getElementById('daily-recap-table-container');
+    container.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Mencari data usia siswa...</p></div>';
+
+    // --- LOGIKA BARU DENGAN CACHING ---
+    const cacheDocId = `${className}-${year}-${month}`;
+    const cacheRef = db.collection('cache_usia_siswa').doc(cacheDocId);
+
+    try {
+        const cacheDoc = await cacheRef.get();
+
+        let studentsWithAge = [];
+
+        if (cacheDoc.exists) {
+            // JALUR 1: Data ditemukan di cache (1 read)
+            console.log("Data usia ditemukan di cache.");
+            studentsWithAge = cacheDoc.data().dataSiswa;
+
+        } else {
+            // JALUR 2: Data tidak ada di cache, hitung manual
+            console.log("Cache tidak ditemukan, menghitung usia secara manual.");
+            const siswaSnapshot = await db.collection('siswa')
+                .where('kelas', '==', className)
+                .where('status', '==', 'Aktif')
+                .get();
+
+            if (siswaSnapshot.empty) {
+                container.innerHTML = '<div class="alert alert-info">Tidak ada siswa aktif di kelas ini.</div>';
+                return;
+            }
+            
+            const targetDate = new Date(year, month, 0);
+            
+            siswaSnapshot.forEach(doc => {
+                const siswa = doc.data();
+                if (siswa.tglLahir && siswa.tglLahir.length === 8) {
+                    const age = calculateAge(siswa.tglLahir, targetDate);
+                    studentsWithAge.push({
+                        nama: siswa.nama,
+                        nomorAbsen: siswa.nomorAbsen,
+                        ageString: `${age.years} Tahun ${age.months} Bulan`
+                    });
+                }
+            });
+
+            // Simpan hasil perhitungan ke cache untuk penggunaan selanjutnya
+            await cacheRef.set({
+                kelas: className,
+                tahun: year,
+                bulan: month,
+                dibuatPada: firebase.firestore.FieldValue.serverTimestamp(),
+                dataSiswa: studentsWithAge
+            });
+            console.log("Cache usia berhasil dibuat untuk:", cacheDocId);
+        }
+        
+        // Urutkan berdasarkan nomor absen (baik dari cache maupun dari perhitungan baru)
+        studentsWithAge.sort((a, b) => a.nomorAbsen - b.nomorAbsen);
+
+        if (studentsWithAge.length === 0) {
+             container.innerHTML = '<div class="alert alert-warning">Tidak ada siswa dengan data tanggal lahir yang valid di kelas ini.</div>';
+             return;
+        }
+
+        let listHtml = '<ul class="list-group list-group-flush">';
+        studentsWithAge.forEach(siswa => {
+            listHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${siswa.nomorAbsen}. ${siswa.nama}</span>
+                    <span class="badge badge-primary badge-pill p-2">${siswa.ageString}</span>
+                </li>
+            `;
+        });
+        listHtml += '</ul>';
+
+        container.innerHTML = listHtml;
+
+    } catch (error) {
+        console.error("Error rendering student age list:", error);
+        container.innerHTML = `<div class="alert alert-danger">Gagal memuat data siswa: ${error.message}</div>`;
+    }
+}
+
+
+async function showCekUsiaView() {
+    // Fungsi ini SANGAT MIRIP dengan showDailyRecapView, hanya memanggil render function yang berbeda
+    dashboardContentArea.style.display = 'none';
+    mainContentArea.style.display = 'block';
+
+    let selectedClass = currentUser.role === 'walikelas' ? currentUser.kelasDiampu : null;
+    let currentDate = new Date();
+    let selectorYear = currentDate.getFullYear();
+
+    let classSelectorHtml = '';
+    if (currentUser.role === 'admin' || currentUser.role === 'mapel') {
+        mainContentArea.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat daftar kelas...</p></div>';
+        try {
+            const snapshot = await db.collection('siswa').where('status', '==', 'Aktif').get();
+            const classes = new Set();
+            snapshot.forEach(doc => classes.add(doc.data().kelas));
+            const sortedClasses = Array.from(classes).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            
+            classSelectorHtml = `
+                <h6 class="text-muted text-center mb-2">Pilih Kelas</h6>
+                <div id="daily-recap-class-selector" class="text-center mb-4">
+                    ${sortedClasses.map(c => `<button class="btn btn-outline-primary m-1 class-btn" data-kelas="${c}">${c}</button>`).join('')}
+                </div>
+                <hr>
+            `;
+        } catch (error) {
+            mainContentArea.innerHTML = `<div class="alert alert-danger">Gagal memuat daftar kelas: ${error.message}</div>`;
+            return;
+        }
+    }
+
+    mainContentArea.innerHTML = `
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center"><i class="fas fa-birthday-cake"></i> Cek Usia Siswa</h5>
+                <p class="text-center text-muted small">Menghitung usia siswa pada akhir bulan yang dipilih.</p>
+                ${classSelectorHtml}
+                
+                <div class="month-selector-container" style="position: relative;">
+                    <div class="d-flex justify-content-center align-items-center my-3">
+                        <button id="prev-month-btn" class="btn btn-light btn-lg"><i class="fas fa-chevron-left"></i></button>
+                        <h4 id="current-month-display" class="mx-4 mb-0 font-weight-bold" style="width: 220px; text-align: center; cursor: pointer; user-select: none;" title="Klik untuk memilih bulan dan tahun"></h4>
+                        <button id="next-month-btn" class="btn btn-light btn-lg"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    
+                    <div id="month-year-selector" class="card shadow-lg" style="display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 1000; width: 280px;">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button id="selector-prev-year" class="btn btn-sm btn-outline-secondary">&lt;</button>
+                                <span id="selector-current-year" class="font-weight-bold"></span>
+                                <button id="selector-next-year" class="btn btn-sm btn-outline-secondary">&gt;</button>
+                            </div>
+                            <div id="selector-month-grid" class="row no-gutters"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="daily-recap-table-container" class="mt-3"></div>
+            </div>
+        </div>
+    `;
+
+    const monthDisplay = document.getElementById('current-month-display');
+    const tableContainer = document.getElementById('daily-recap-table-container');
+    const monthYearSelector = document.getElementById('month-year-selector');
+    const selectorYearDisplay = document.getElementById('selector-current-year');
+    const monthGrid = document.getElementById('selector-month-grid');
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+
+    const generateMonthGrid = () => {
+        selectorYearDisplay.textContent = selectorYear;
+        monthGrid.innerHTML = monthNames.map((name, index) => {
+            const isSelected = (index === currentDate.getMonth() && selectorYear === currentDate.getFullYear());
+            const btnClass = isSelected ? 'btn-primary' : 'btn-light';
+            return `<div class="col-3 p-1"><button class="btn btn-sm btn-block ${btnClass}" data-month="${index}">${name}</button></div>`;
+        }).join('');
+    };
+
+    const updateDisplayAndRender = () => {
+        monthDisplay.textContent = currentDate.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        if (selectedClass) {
+            // Panggil fungsi render yang berbeda
+            renderCekUsiaTable(selectedClass, currentDate.getFullYear(), currentDate.getMonth() + 1);
+        } else {
+            tableContainer.innerHTML = '<p class="text-muted text-center">Silakan pilih kelas untuk melihat data usia.</p>';
+        }
+    };
+
+    // --- Event Listeners (Sama seperti sebelumnya) ---
+
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateDisplayAndRender();
+    });
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateDisplayAndRender();
+    });
+
+    monthDisplay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = monthYearSelector.style.display === 'none';
+        if (isHidden) {
+            selectorYear = currentDate.getFullYear();
+            generateMonthGrid();
+            monthYearSelector.style.display = 'block';
+        } else {
+            monthYearSelector.style.display = 'none';
+        }
+    });
+
+    document.getElementById('selector-prev-year').addEventListener('click', () => { selectorYear--; generateMonthGrid(); });
+    document.getElementById('selector-next-year').addEventListener('click', () => { selectorYear++; generateMonthGrid(); });
+
+    monthGrid.addEventListener('click', (e) => {
+        if (e.target.matches('[data-month]')) {
+            currentDate.setFullYear(selectorYear, parseInt(e.target.dataset.month), 1);
+            monthYearSelector.style.display = 'none';
+            updateDisplayAndRender();
+        }
+    });
+
+    window.addEventListener('click', (e) => {
+        if (!monthYearSelector.contains(e.target) && e.target !== monthDisplay) {
+            monthYearSelector.style.display = 'none';
+        }
+    });
+    
+    const classSelector = document.getElementById('daily-recap-class-selector');
+    if (classSelector) {
+        classSelector.addEventListener('click', (e) => {
+            if (e.target.classList.contains('class-btn')) {
+                document.querySelectorAll('.class-btn').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+                e.target.classList.remove('btn-outline-primary');
+                e.target.classList.add('btn-primary');
+                selectedClass = e.target.dataset.kelas;
+                updateDisplayAndRender();
+            }
+        });
+    }
+
+    updateDisplayAndRender();
+}
+
 
 async function showUnscannedForm() {
     dashboardContentArea.style.display = 'none';
@@ -758,13 +1268,11 @@ async function updateQuickDashboard() {
 // =================================================================
 
 async function renderDailySummary() {
-    console.log('Entering renderDailySummary()...'); // Debug
+    dailySummaryDisplay.style.display = 'block';
     dailySummaryDisplay.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Memuat ringkasan...</div>';
 
     const today = new Date();
     const tglString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-    console.log('Fetching summary for date:', tglString); // Debug
-
 
     try {
         let html = '';
@@ -774,16 +1282,33 @@ async function renderDailySummary() {
             const rekapRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${currentUser.kelasDiampu}`);
             const rekapDoc = await rekapRef.get();
 
-            let data = { totalSiswa: 0, hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0, belumAbsen: 0 };
+            let data; // Deklarasikan variabel data
+
             if (rekapDoc.exists) {
+                // JALUR 1: Dokumen sudah ada, langsung gunakan datanya.
                 data = rekapDoc.data();
             } else {
+                // JALUR 2: Dokumen belum ada. Hitung total siswa dan buat dokumen cache.
+                console.log(`Cache rekap harian untuk ${currentUser.kelasDiampu} tidak ditemukan, membuat...`);
                 const siswaKelasSnapshot = await db.collection('siswa').where('kelas', '==', currentUser.kelasDiampu).where('status', '==', 'Aktif').get();
-                data.totalSiswa = siswaKelasSnapshot.size;
-                data.belumAbsen = siswaKelasSnapshot.size;
+                const totalSiswa = siswaKelasSnapshot.size;
+
+                // Siapkan struktur data default
+                data = {
+                    totalSiswa: totalSiswa,
+                    hadir: 0,
+                    pulang: 0,
+                    sakit: 0,
+                    izin: 0,
+                    alpha: 0,
+                    belumAbsen: totalSiswa
+                };
+
+                // Buat dokumen di Firestore agar bisa dibaca lagi nanti tanpa menghitung ulang.
+                await rekapRef.set(data);
+                console.log("Cache rekap harian berhasil dibuat.");
             }
             
-            // Kode HTML untuk Wali Kelas tidak berubah
             html = `
                 <div class="quick-summary-card global-summary-card">
                     <h5 class="summary-title"><i class="fas fa-calendar-day"></i> ${mainTitle}</h5>
@@ -801,17 +1326,41 @@ async function renderDailySummary() {
             `;
 
         } else { 
-            // --- BAGIAN UNTUK ADMIN YANG DIOPTIMALKAN MAKSIMAL ---
+            // --- LOGIKA BARU UNTUK ADMIN/MAPEL DENGAN CACHE ---
             const mainTitle = 'Ringkasan Absensi Seluruh Sekolah';
-            
-            // 1. HANYA membaca koleksi rekap harian
+
+            // 1. Dapatkan semua siswa aktif untuk menghitung total per kelas dan mendapatkan daftar kelas unik
+            const allSiswaSnapshot = await db.collection('siswa').where('status', '==', 'Aktif').get();
+            const uniqueClasses = [...new Set(allSiswaSnapshot.docs.map(doc => doc.data().kelas))];
+
+            // 2. Periksa dan buat cache untuk setiap kelas jika belum ada
+            const cachePromises = uniqueClasses.map(async (className) => {
+                const rekapRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${className}`);
+                const rekapDoc = await rekapRef.get();
+                if (!rekapDoc.exists) {
+                    console.log(`Cache rekap harian untuk ${className} tidak ditemukan, membuat...`);
+                    // Hitung total siswa untuk kelas ini dari snapshot yang sudah diambil
+                    const totalSiswa = allSiswaSnapshot.docs.filter(doc => doc.data().kelas === className).length;
+                    const data = {
+                        totalSiswa: totalSiswa,
+                        hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0,
+                        belumAbsen: totalSiswa
+                    };
+                    return rekapRef.set(data); // Kembalikan promise untuk ditunggu
+                }
+            });
+
+            // Tunggu semua proses pembuatan cache selesai
+            await Promise.all(cachePromises);
+            console.log("Semua cache rekap harian telah diperiksa/dibuat.");
+
+            // 3. Lanjutkan dengan merangkum data (logika ini tetap sama)
             const rekapQuery = db.collection('rekap_harian_per_kelas').where(firebase.firestore.FieldPath.documentId(), '>=', tglString).where(firebase.firestore.FieldPath.documentId(), '<', tglString + 'z');
             const rekapSnapshot = await rekapQuery.get();
 
-            let totalData = { totalSiswa: 0, hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0 };
+            let totalData = { totalSiswa: 0, hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0, belumAbsen: 0 };
             const classSummaries = {};
 
-            // 2. Jumlahkan semua data dari rekap harian yang ada
             rekapSnapshot.forEach(doc => {
                 const data = doc.data();
                 const kelas = doc.id.split('_')[1];
@@ -822,11 +1371,9 @@ async function renderDailySummary() {
                 });
             });
             
-            // 3. Hitung 'belumAbsen' berdasarkan total siswa yang sudah ada di rekap
             const totalSudahAbsen = totalData.hadir + totalData.sakit + totalData.izin + totalData.alpha;
             totalData.belumAbsen = totalData.totalSiswa - totalSudahAbsen;
 
-            // 4. Buat HTML untuk kartu ringkasan total admin
             html = `
                 <div class="quick-summary-card global-summary-card">
                     <h5 class="summary-title"><i class="fas fa-calendar-day"></i> ${mainTitle}</h5>
@@ -839,11 +1386,10 @@ async function renderDailySummary() {
                         <div class="metric-item absent"><span class="metric-value">${totalData.alpha}</span><span class="metric-label">Alfa</span></div>
                         <div class="metric-item pending"><span class="metric-value">${totalData.belumAbsen}</span><span class="metric-label">Belum Absen</span></div>
                     </div>
-                    <p class="text-muted small mt-3 text-center">Total ${totalData.totalSiswa} siswa dari kelas yang sudah terdata hari ini.</p>
+                    <p class="text-muted small mt-3 text-center">Total ${totalData.totalSiswa} siswa dari seluruh kelas.</p>
                 </div>
             `;
 
-            // 5. Buat HTML untuk akordeon detail per kelas
             html += `
                 <div class="quick-summary-card class-details-card mt-4">
                     <h5 class="summary-title mb-3"><i class="fas fa-chalkboard-teacher"></i> Detail Absensi Per Kelas</h5>
@@ -883,14 +1429,13 @@ async function renderDailySummary() {
         }
 
         dailySummaryDisplay.innerHTML = html;
-        console.log('HTML content set for dailySummaryDisplay. First 200 chars:', html.substring(0, 200)); // Debug
-        console.log('Leaving renderDailySummary().'); // Debug
 
     } catch (error) {
         console.error("Error rendering daily summary:", error);
         dailySummaryDisplay.innerHTML = `<div class="alert alert-danger text-center">Gagal memuat ringkasan: ${error.message}</div>`;
     }
 }
+
 
 // =================================================================
 // --- AKHIR FUNGSI RENDER DAILY SUMMARY ---
@@ -903,90 +1448,55 @@ async function renderDailySummary() {
 
 async function fetchRekap(semester) {
     const rekapContentDiv = document.getElementById('rekap-content-semester' + semester);
-    rekapContentDiv.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat rekap...</p></div>';
-
+    rekapContentDiv.innerHTML = '<div class="text-center mt-4"><div class="spinner-border"></div><p>Memuat rekap dari cache...</p></div>';
+    
     try {
-        let siswaQuery = db.collection('siswa').where('status', '==', 'Aktif');
+        const currentYear = new Date().getFullYear();
+        
+        let rekapQuery = db.collection('cache_rekap_semester')
+            .where('tahun', '==', currentYear)
+            .where('semester', '==', semester);
+
         if (currentUser.role === 'walikelas') {
-            siswaQuery = siswaQuery.where('kelas', '==', currentUser.kelasDiampu);
+            rekapQuery = rekapQuery.where('kelas', '==', currentUser.kelasDiampu);
         }
-        const siswaSnapshot = await siswaQuery.get();
 
-        // Ubah ini: rekapSiswa akan menjadi objek yang mengelompokkan siswa berdasarkan kelas
-        const rekapSiswaByClass = {};
-
-        siswaSnapshot.forEach(doc => {
-            const siswa = doc.data();
-            if (!rekapSiswaByClass[siswa.kelas]) {
-                rekapSiswaByClass[siswa.kelas] = [];
-            }
-            // Tambahkan siswa ke dalam array kelasnya
-            rekapSiswaByClass[siswa.kelas].push({ ...siswa, total: { sakit: 0, izin: 0, alpha: 0 }, detailUntukEdit: [] });
-        });
-
-        if (Object.keys(rekapSiswaByClass).length === 0) { // Cek apakah ada siswa
-            rekapContentDiv.innerHTML = '<div class="alert alert-info">Tidak ada siswa untuk ditampilkan.</div>';
+        const rekapSnapshot = await rekapQuery.get();
+        
+        if (rekapSnapshot.empty) {
+            rekapContentDiv.innerHTML = '<div class="alert alert-info">Belum ada data rekap untuk semester ini.</div>';
             return;
         }
 
-        // Kumpulkan semua NISN dari semua kelas untuk kueri rekap bulanan
-        const allNisnList = [];
-        for (const kelas in rekapSiswaByClass) {
-            rekapSiswaByClass[kelas].forEach(siswa => {
-                allNisnList.push(siswa.nisn);
-            });
-        }
+        const rekapSiswaByClass = {};
 
-        const rekapPromises = [];
-        const currentYear = new Date().getFullYear();
-        const startMonth = semester === 1 ? 7 : 1;
-        const endMonth = semester === 1 ? 12 : 6;
-
-        // Memecah daftar NISN menjadi kelompok berisi maksimal 10
-        for (let i = 0; i < allNisnList.length; i += 10) {
-            const chunk = allNisnList.slice(i, i + 10);
-            rekapPromises.push(
-                db.collection('rekap_bulanan')
-                    .where('nisn', 'in', chunk)
-                    .where('tahun', '==', currentYear)
-                    .where('bulan', '>=', startMonth)
-                    .where('bulan', '<=', endMonth)
-                    .get()
-            );
-        }
-        const rekapSnapshots = await Promise.all(rekapPromises);
-
-        rekapSnapshots.forEach(rekapSnapshot => {
-            rekapSnapshot.forEach(doc => {
-                const rekapData = doc.data();
-                // Cari siswa yang sesuai di dalam rekapSiswaByClass
-                // Ini memerlukan iterasi yang lebih efisien atau struktur data yang lebih baik
-                // Untuk sederhana, kita akan cari dulu kelasnya, lalu siswanya
-                if (rekapSiswaByClass[rekapData.kelas]) {
-                    const siswaIndex = rekapSiswaByClass[rekapData.kelas].findIndex(s => s.nisn === rekapData.nisn);
-                    if (siswaIndex !== -1 && rekapData.absensi) {
-                        rekapData.absensi.forEach(absen => {
-                            if (absen.status === 'Sakit') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.sakit++;
-                            if (absen.status === 'Izin') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.izin++;
-                            if (absen.status === 'Tanpa Keterangan') rekapSiswaByClass[rekapData.kelas][siswaIndex].total.alpha++;
-
-                            rekapSiswaByClass[rekapData.kelas][siswaIndex].detailUntukEdit.push({
-                                docId: absen.logId,
-                                tanggal: absen.tanggal,
-                                status: absen.status
-                            });
-                        });
-                    }
-                }
+        rekapSnapshot.forEach(doc => {
+            const rekapData = doc.data();
+            
+            if (!rekapSiswaByClass[rekapData.kelas]) {
+                rekapSiswaByClass[rekapData.kelas] = [];
+            }
+            
+            // Transformasi data dari cache ke format yang dibutuhkan oleh fungsi render
+            rekapSiswaByClass[rekapData.kelas].push({
+                nisn: rekapData.nisn,
+                nama: rekapData.nama,
+                nomorAbsen: rekapData.nomorAbsen,
+                kelas: rekapData.kelas,
+                total: {
+                    sakit: rekapData.totalSakit || 0,
+                    izin: rekapData.totalIzin || 0,
+                    alpha: rekapData.totalAlpha || 0
+                },
+                detailUntukEdit: rekapData.detailAbsensi || []
             });
         });
 
-        // Simpan data yang sudah dikelompokkan berdasarkan kelas
         fullRekapData = rekapSiswaByClass;
         renderRekapTableContent();
 
     } catch (error) {
-        console.error("Error fetching rekap:", error);
+        console.error("Error fetching semester recap from cache:", error);
         rekapContentDiv.innerHTML = `<div class="alert alert-danger">Gagal memuat rekap: ${error.message}</div>`;
     }
 }
@@ -995,68 +1505,26 @@ async function fetchRekap(semester) {
 function renderRekapTableContent() {
     const activeTab = document.querySelector('#semesterPills .nav-link.active');
     const semesterNumber = activeTab ? (activeTab.id === 'semester1-tab' ? 1 : 2) : 1;
-
     const rekapContentDiv = document.getElementById('rekap-content-semester' + semesterNumber);
-    if (!rekapContentDiv) {
-        console.error('Target rekap content div (rekap-content-semester' + semesterNumber + ') tidak ditemukan saat merender.');
-        return;
-    }
-
+    if (!rekapContentDiv) return;
     let html = '';
     if (currentUser.role === 'walikelas') {
-        // Untuk walikelas, fullRekapData[currentUser.kelasDiampu] akan menjadi array siswa
-        // Namun, di fetchRekap, kita sudah membuat fullRekapData sebagai objek by class
-        // Jadi, untuk walikelas, kita perlu mengaksesnya sebagai fullRekapData[currentUser.kelasDiampu]
-        const walikelasData = fullRekapData[currentUser.kelasDiampu] || [];
-        html += renderTable(walikelasData, `Rekap Kelas: ${currentUser.kelasDiampu}`);
+        html += renderTable(fullRekapData[currentUser.kelasDiampu] || [], `Rekap Kelas: ${currentUser.kelasDiampu}`);
     } else {
-        html += `
-            <div class="card card-body mt-3"> <h5 class="card-title mb-3"><i class="fas fa-chalkboard-teacher"></i> Rekap Absensi Per Kelas</h5>
-                <div class="accordion" id="rekapClassAccordion"> `;
-
-        // Urutkan kelas secara numerik
-        const kelasKeys = Object.keys(fullRekapData).sort((a, b) => {
-            // Perbaikan untuk memastikan perbandingan numerik pada nama kelas
-            const numA = parseInt(a.replace(/[^0-9]/g, '')); // Ekstrak hanya angka
-            const numB = parseInt(b.replace(/[^0-9]/g, ''));
-            if (isNaN(numA) || isNaN(numB)) { // Jika bukan angka (misal "SD"), gunakan perbandingan string
-                return a.localeCompare(b);
-            }
-            return numA - numB;
-        });
-
-
-        if (kelasKeys.length === 0) {
-            html += '<div class="alert alert-info">Tidak ada data siswa untuk semester ini.</div>';
-        } else {
-            kelasKeys.forEach((kelas) => { // Hapus index karena tidak digunakan
+        html += `<div class="card card-body mt-3"><h5 class="card-title mb-3"><i class="fas fa-chalkboard-teacher"></i> Rekap Absensi Per Kelas</h5><div class="accordion" id="rekapClassAccordion">`;
+        const kelasKeys = Object.keys(fullRekapData).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+        if (kelasKeys.length === 0) html += '<div class="alert alert-info">Tidak ada data siswa untuk semester ini.</div>';
+        else {
+            kelasKeys.forEach(kelas => {
                 const classId = kelas.replace(/\s+/g, '');
-                // Akses array siswa untuk kelas tertentu dari fullRekapData
-                const dataForClass = fullRekapData[kelas]; // <--- SUDAH BENAR SEKARANG
-                html += `
-                    <div class="card class-accordion-item">
-                        <div class="card-header" id="headingRekap${classId}">
-                            <h2 class="mb-0">
-                                <button class="btn btn-block text-left d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#collapseRekap${classId}" aria-expanded="false" aria-controls="collapseRekap${classId}">
-                                    Kelas ${kelas}
-                                    <i class="fas fa-chevron-down accordion-icon"></i>
-                                </button>
-                            </h2>
-                        </div>
-                        <div id="collapseRekap${classId}" class="collapse" aria-labelledby="headingRekap${classId}" data-parent="#rekapClassAccordion">
-                            <div class="card-body">
-                                ${renderTable(dataForClass, `Rekap Kelas: ${kelas}`)}
-                            </div>
-                        </div>
-                    </div>
-                `;
+                html += `<div class="card class-accordion-item"><div class="card-header" id="hRekap${classId}"><h2 class="mb-0">
+                    <button class="btn btn-block text-left d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#cRekap${classId}">
+                    Kelas ${kelas}<i class="fas fa-chevron-down accordion-icon"></i></button></h2></div>
+                    <div id="cRekap${classId}" class="collapse" data-parent="#rekapClassAccordion"><div class="card-body">
+                    ${renderTable(fullRekapData[kelas], `Rekap Kelas: ${kelas}`)}</div></div></div>`;
             });
         }
-
-        html += `
-                </div>
-            </div>
-        `;
+        html += `</div></div>`;
     }
     rekapContentDiv.innerHTML = html;
 }
@@ -1064,56 +1532,41 @@ function renderRekapTableContent() {
 function renderTable(dataSiswa, title) {
     if (!dataSiswa || dataSiswa.length === 0) return '<div class="alert alert-info">Tidak ada data siswa aktif di kelas ini.</div>';
     let tableHtml = `<div class="card"><div class="card-body"><h5 class="card-title">${title}</h5><p class="card-text small text-muted">Klik nama siswa untuk melihat rincian & melakukan koreksi.</p><div class="table-responsive"><table class="table table-hover table-sm"><thead><tr><th>No</th><th>Nama Siswa</th><th>Sakit</th><th>Izin</th><th>Alfa</th></tr></thead><tbody>`;
-    dataSiswa.sort((a,b) => a.nomorAbsen - b.nomorAbsen).forEach(siswa => {
-        // Memastikan details-row disembunyikan secara default
-        tableHtml += `<tr onclick="toggleDetails('${siswa.nisn}')" style="cursor: pointer;"><td>${siswa.nomorAbsen}</td><td><span class="student-name">${siswa.nama}</span></td><td>${siswa.total.sakit}</td><td>${siswa.total.izin}</td><td>${siswa.total.alpha}</td></tr><tr id="detail-${siswa.nisn}" class="details-row" style="display: none;"><td colspan="5"><div class="details-content"></div></td></tr>`;
+    dataSiswa.sort((a,b) => a.nomorAbsen - b.nomorAbsen).forEach(s => {
+        tableHtml += `<tr onclick="toggleDetails('${s.nisn}')" style="cursor: pointer;"><td>${s.nomorAbsen}</td><td><span class="student-name">${s.nama}</span></td><td>${s.total.sakit}</td><td>${s.total.izin}</td><td>${s.total.alpha}</td></tr><tr id="detail-${s.nisn}" class="details-row" style="display: none;"><td colspan="5"><div class="details-content"></div></td></tr>`;
     });
     tableHtml += '</tbody></table></div></div></div>';
     return tableHtml;
 }
 
 function toggleDetails(nisn) {
-    const allDetailRows = document.querySelectorAll('.details-row');
-    const targetDetailRow = document.getElementById(`detail-${nisn}`);
-    const wasOpen = targetDetailRow.style.display !== 'none';
-    allDetailRows.forEach(row => { if(row.id !== targetDetailRow.id) row.style.display = 'none'; });
+    const targetRow = document.getElementById(`detail-${nisn}`);
+    const wasOpen = targetRow.style.display !== 'none';
+    document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
     if (!wasOpen) {
-        targetDetailRow.style.display = 'table-row';
-        const detailCell = targetDetailRow.querySelector('.details-content');
-        if (detailCell.innerHTML.trim() === '') {
-            const siswaData = findSiswaByNisn(nisn);
-            detailCell.innerHTML = renderDetailContent(siswaData);
-        }
-    } else {
-        targetDetailRow.style.display = 'none';
+        targetRow.style.display = 'table-row';
+        const detailCell = targetRow.querySelector('.details-content');
+        if (detailCell.innerHTML.trim() === '') detailCell.innerHTML = renderDetailContent(findSiswaByNisn(nisn));
     }
 }
 
 function findSiswaByNisn(nisn) {
-    // Loop melalui setiap array siswa di setiap kelas
-    for (const kelas in fullRekapData) {
-        if (Array.isArray(fullRekapData[kelas])) { // Pastikan itu array
-            const siswa = fullRekapData[kelas].find(s => s.nisn === nisn);
-            if (siswa) return siswa;
-        }
-    }
-    return null; // Jika tidak ditemukan
+    for (const kelas in fullRekapData) if (Array.isArray(fullRekapData[kelas])) {
+        const siswa = fullRekapData[kelas].find(s => s.nisn === nisn); if (siswa) return siswa;
+    } return null;
 }
 
 function renderDetailContent(siswa) {
     if (!siswa.detailUntukEdit || siswa.detailUntukEdit.length === 0) return '<div class="alert alert-light">Tidak ada catatan ketidakhadiran untuk dikoreksi.</div>';
-    let detailHtml = '<table class="table table-bordered table-sm"><thead><tr><th>Tanggal</th><th>Status</th>';
-    if(currentUser.canEdit) detailHtml += '<th>Aksi</th>';
-    detailHtml += '</tr></thead><tbody>';
-    siswa.detailUntukEdit.sort((a,b) => new Date(b.tanggal.split(' ').reverse().join('-')) - new Date(a.tanggal.split(' ').reverse().join('-'))).forEach(d => {
-        detailHtml += `<tr id="row-${d.docId}"><td>${d.tanggal}</td><td class="status-cell">${d.status}</td>`;
-        if(currentUser.canEdit) {
-             detailHtml += `<td class="action-cell"><button onclick="event.stopPropagation(); toggleEditMode('${d.docId}', '${d.status}')" class="btn btn-warning btn-sm" title="Edit"><i class="fas fa-edit"></i></button></td>`;
-        }
-        detailHtml += `</tr>`;
+    let html = '<table class="table table-bordered table-sm"><thead><tr><th>Tanggal</th><th>Status</th>';
+    if(currentUser.canEdit) html += '<th>Aksi</th>';
+    html += '</tr></thead><tbody>';
+    siswa.detailUntukEdit.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).forEach(d => {
+        html += `<tr id="row-${d.docId}"><td>${d.tanggal}</td><td class="status-cell">${d.status}</td>`;
+        if(currentUser.canEdit) html += `<td class="action-cell"><button onclick="event.stopPropagation(); toggleEditMode('${d.docId}', '${d.status}')" class="btn btn-warning btn-sm" title="Edit"><i class="fas fa-edit"></i></button></td>`;
+        html += `</tr>`;
     });
-    detailHtml += '</tbody></table>';
-    return detailHtml;
+    html += '</tbody></table>'; return html;
 }
 
 function toggleEditMode(docId, currentStatus) {
@@ -1157,7 +1610,7 @@ async function saveEdit(docId) {
     try {
         const logDoc = await logRef.get();
         if (!logDoc.exists) throw new Error("Dokumen log tidak ditemukan!");
-
+        
         const logData = logDoc.data();
         const oldStatus = logData.status;
 
@@ -1170,41 +1623,60 @@ async function saveEdit(docId) {
         const tglString = `${timestamp.getFullYear()}-${(timestamp.getMonth() + 1).toString().padStart(2, '0')}-${timestamp.getDate().toString().padStart(2, '0')}`;
         const year = timestamp.getFullYear();
         const month = timestamp.getMonth() + 1;
-
-        const rekapHarianRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${logData.kelas}`);
-        const rekapBulananRef = db.collection('rekap_bulanan').doc(`${logData.nisn}_${year}-${month}`);
-
-        const oldField = oldStatus === 'Tanpa Keterangan' ? 'alpha' : oldStatus.toLowerCase();
-        const newField = newStatus === 'Tanpa Keterangan' ? 'alpha' : newStatus.toLowerCase();
-
-        const oldDetailAbsen = { tanggal: tglString, status: oldStatus, logId: docId };
-        const newDetailAbsen = { tanggal: tglString, status: newStatus, logId: docId };
+        const day = timestamp.getDate();
+        const semester = (month >= 7 && month <= 12) ? 1 : 2;
 
         const batch = db.batch();
-        
+
+        // 1. Update log absensi
         batch.update(logRef, { status: newStatus });
+
+        // 2. Update rekap harian
+        const rekapHarianRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${logData.kelas}`);
+        const oldFieldHarian = oldStatus === 'Tanpa Keterangan' ? 'alpha' : oldStatus.toLowerCase();
+        const newFieldHarian = newStatus === 'Tanpa Keterangan' ? 'alpha' : newStatus.toLowerCase();
         batch.update(rekapHarianRef, {
-            [oldField]: firebase.firestore.FieldValue.increment(-1),
-            [newField]: firebase.firestore.FieldValue.increment(1)
+            [oldFieldHarian]: firebase.firestore.FieldValue.increment(-1),
+            [newFieldHarian]: firebase.firestore.FieldValue.increment(1)
         });
-        batch.update(rekapBulananRef, {
-            absensi: firebase.firestore.FieldValue.arrayRemove(oldDetailAbsen)
+
+        // 3. Update rekap bulanan (detail)
+        const rekapBulananRef = db.collection('rekap_bulanan').doc(`${logData.nisn}_${year}-${month}`);
+        batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayRemove({ tanggal: tglString, status: oldStatus, logId: docId }) });
+        batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayUnion({ tanggal: tglString, status: newStatus, logId: docId }) });
+
+        // 4. Update agregat bulanan (harian)
+        const agregatBulananRef = db.collection('agregat_bulanan_kelas').doc(`${logData.kelas}-${year}-${month}`);
+        batch.update(agregatBulananRef, {
+            [`rekap.tgl_${day}.${oldFieldHarian}`]: firebase.firestore.FieldValue.increment(-1),
+            [`rekap.tgl_${day}.${newFieldHarian}`]: firebase.firestore.FieldValue.increment(1)
         });
-        batch.update(rekapBulananRef, {
-            absensi: firebase.firestore.FieldValue.arrayUnion(newDetailAbsen)
+        
+        // 5. --- LOGIKA BARU: Update cache rekap semester ---
+        const cacheRef = db.collection('cache_rekap_semester').doc(`${logData.nisn}_${year}_${semester}`);
+        const oldFieldSemester = oldStatus === 'Tanpa Keterangan' ? 'totalAlpha' : `total${oldStatus.charAt(0).toUpperCase() + oldStatus.slice(1)}`;
+        const newFieldSemester = newStatus === 'Tanpa Keterangan' ? 'totalAlpha' : `total${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`;
+        
+        batch.update(cacheRef, {
+            [oldFieldSemester]: firebase.firestore.FieldValue.increment(-1),
+            [newFieldSemester]: firebase.firestore.FieldValue.increment(1),
+            detailAbsensi: firebase.firestore.FieldValue.arrayRemove({ tanggal: tglString, status: oldStatus, logId: docId }),
         });
+        batch.update(cacheRef, {
+            detailAbsensi: firebase.firestore.FieldValue.arrayUnion({ tanggal: tglString, status: newStatus, logId: docId })
+        });
+
 
         await batch.commit();
         
-        alert('Perubahan berhasil disimpan!');
+        Toastify({ text: 'Perubahan berhasil disimpan!', duration: 2000, style: { background: "#4CAF50" } }).showToast();
         const activeTab = document.querySelector('#semesterPills .nav-link.active');
         if (activeTab) {
-            const semesterToRefresh = activeTab.id === 'semester1-tab' ? 1 : 2;
-            await fetchRekap(semesterToRefresh);
+            await fetchRekap(activeTab.id === 'semester1-tab' ? 1 : 2);
         }
 
     } catch (error) {
-        alert('Gagal menyimpan perubahan: ' + error.message);
+        Toastify({ text: 'Gagal menyimpan perubahan: ' + error.message, duration: 3000, style: { background: "#dc3545" } }).showToast();
         cancelEdit(docId);
     }
 }
@@ -1227,67 +1699,50 @@ async function saveUnscanned(e) {
     try {
         const today = new Date();
         const tglString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1;
+        const year = today.getFullYear(), month = today.getMonth() + 1, day = today.getDate();
         const rekapKelasRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${currentUser.kelasDiampu}`);
-
+        
         const batch = db.batch();
         const siswaSnapshot = await db.collection('siswa').where('kelas', '==', currentUser.kelasDiampu).where('status', '==', 'Aktif').get();
-        const siswaMap = new Map();
-        siswaSnapshot.forEach(doc => siswaMap.set(doc.data().nisn, doc.data()));
-
+        const siswaMap = new Map(siswaSnapshot.docs.map(doc => [doc.data().nisn, doc.data()]));
+        
         const rekapDoc = await rekapKelasRef.get();
         if (!rekapDoc.exists) {
-            const totalSiswaDiKelas = siswaSnapshot.size;
-            batch.set(rekapKelasRef, {
-                totalSiswa: totalSiswaDiKelas, hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0,
-                belumAbsen: totalSiswaDiKelas
-            });
+            batch.set(rekapKelasRef, { totalSiswa: siswaSnapshot.size, hadir: 0, pulang: 0, sakit: 0, izin: 0, alpha: 0, belumAbsen: siswaSnapshot.size });
         }
 
-        for (const absen of absensiData) { // Gunakan for...of untuk async/await jika ada
+        for (const absen of absensiData) {
             const siswaInfo = siswaMap.get(absen.nisn);
             if (siswaInfo) {
-                const logRef = db.collection('log_absensi').doc(); // Membuat ID dokumen baru
+                const logRef = db.collection('log_absensi').doc();
                 const fieldToIncrement = absen.status === 'Tanpa Keterangan' ? 'alpha' : absen.status.toLowerCase();
-
-                // 1. Simpan ke log_absensi (untuk jejak audit & fitur edit)
-                batch.set(logRef, {
-                    nisn: siswaInfo.nisn,
-                    nama: siswaInfo.nama,
-                    kelas: siswaInfo.kelas,
-                    status: absen.status, // Ini adalah "Sakit", "Izin", "Tanpa Keterangan"
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                
+                // 1. Simpan ke log_absensi
+                batch.set(logRef, { nisn: siswaInfo.nisn, nama: siswaInfo.nama, kelas: siswaInfo.kelas, status: absen.status, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 
                 // 2. Update rekap harian
-                batch.update(rekapKelasRef, {
-                    [fieldToIncrement]: firebase.firestore.FieldValue.increment(1),
-                    belumAbsen: firebase.firestore.FieldValue.increment(-1)
-                });
+                batch.update(rekapKelasRef, { [fieldToIncrement]: firebase.firestore.FieldValue.increment(1), belumAbsen: firebase.firestore.FieldValue.increment(-1) });
                 
-                // 3. Update rekap bulanan dengan rincian
+                // 3. Update rekap bulanan (rincian)
                 const rekapBulananRef = db.collection('rekap_bulanan').doc(`${siswaInfo.nisn}_${year}-${month}`);
-                const detailAbsen = {
-                    tanggal: tglString, // Gunakan tglString hari ini
-                    status: absen.status,
-                    logId: logRef.id
-                };
+                const detailAbsen = { tanggal: tglString, status: absen.status, logId: logRef.id };
                 batch.set(rekapBulananRef, { nisn: siswaInfo.nisn, nama: siswaInfo.nama, kelas: siswaInfo.kelas, tahun: year, bulan: month }, { merge: true });
-                batch.update(rekapBulananRef, {
-                    absensi: firebase.firestore.FieldValue.arrayUnion(detailAbsen)
-                });
+                batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayUnion(detailAbsen) });
 
-                // --- PENTING: PANGGIL FUNGSI UNTUK KIRIM DATA KE GOOGLE SHEET ---
-                // Panggil di sini agar setiap absensi yang disimpan memicu notifikasi
+                // 4. >>> KODE BARU: Update Agregat Harian <<<
+                const statusFieldAgregat = absen.status === 'Tanpa Keterangan' ? 'alfa' : absen.status.toLowerCase();
+                const agregatDocId = `${siswaInfo.kelas}-${year}-${month}`;
+                const agregatRef = db.collection('agregat_bulanan_kelas').doc(agregatDocId);
+                batch.set(agregatRef, { kelas: siswaInfo.kelas, tahun: year, bulan: month }, { merge: true });
+                batch.update(agregatRef, { [`rekap.tgl_${day}.${statusFieldAgregat}`]: firebase.firestore.FieldValue.increment(1) });
+                
                 await kirimDataAbsensiKeSheet(siswaInfo.nisn, absen.status);
             }
         }
         
-        await batch.commit(); // Commit semua operasi batch
-
+        await batch.commit();
         Toastify({ text: 'Data berhasil disimpan!', duration: 3000, gravity: "top", position: "center", style: { background: "#4CAF50" } }).showToast();
-        showQuickSummary(); // Kembali ke ringkasan
+        showQuickSummary();
 
     } catch (error) {
         Toastify({ text: `Gagal menyimpan: ${error.message}`, duration: 3000, gravity: "top", position: "center", style: { background: "#dc3545" } }).showToast();
@@ -1355,8 +1810,7 @@ async function saveManualAttendance(e) {
         const selectedDate = new Date(selectedDateString);
         selectedDate.setHours(8, 0, 0, 0);
         const firebaseTimestamp = firebase.firestore.Timestamp.fromDate(selectedDate);
-        const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth() + 1;
+        const year = selectedDate.getFullYear(), month = selectedDate.getMonth() + 1, day = selectedDate.getDate();
 
         const selections = this.querySelectorAll('select');
         const absensiData = Array.from(selections)
@@ -1378,37 +1832,28 @@ async function saveManualAttendance(e) {
         
         absensiData.forEach(absen => {
             const logRef = db.collection('log_absensi').doc();
-            // 1. Simpan ke log_absensi (untuk jejak audit & fitur edit)
+            // 1. Simpan ke log_absensi
             batch.set(logRef, {
                 nisn: absen.nisn, nama: absen.nama, kelas: absen.kelas,
                 nomorAbsen: parseInt(absen.nomorAbsen), status: absen.status,
                 timestamp: firebaseTimestamp, dicatatOleh: currentUser.name
             });
 
-            // --- LOGIKA AGREGRASI YANG DIPERBAIKI ---
-            // 2. Update rekap bulanan dengan rincian array
+            // 2. Update rekap bulanan (rincian)
             const rekapBulananRef = db.collection('rekap_bulanan').doc(`${absen.nisn}_${year}-${month}`);
-            const detailAbsen = {
-                tanggal: selectedDateString,
-                status: absen.status,
-                logId: logRef.id
-            };
+            const detailAbsen = { tanggal: selectedDateString, status: absen.status, logId: logRef.id };
+            batch.set(rekapBulananRef, { nisn: absen.nisn, nama: absen.nama, kelas: absen.kelas, tahun: year, bulan: month }, { merge: true });
+            batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayUnion(detailAbsen) });
 
-            // Buat dokumen jika belum ada
-            batch.set(rekapBulananRef, {
-                nisn: absen.nisn, nama: absen.nama, kelas: absen.kelas,
-                tahun: year, bulan: month
-            }, { merge: true });
-            
-            // Tambahkan objek detail baru ke array 'absensi'
-            batch.update(rekapBulananRef, {
-                absensi: firebase.firestore.FieldValue.arrayUnion(detailAbsen)
-            });
-            // --- AKHIR PERBAIKAN ---
+            // 3. >>> KODE BARU: Update Agregat Harian <<<
+            const statusFieldAgregat = absen.status === 'Tanpa Keterangan' ? 'alfa' : absen.status.toLowerCase();
+            const agregatDocId = `${absen.kelas}-${year}-${month}`;
+            const agregatRef = db.collection('agregat_bulanan_kelas').doc(agregatDocId);
+            batch.set(agregatRef, { kelas: absen.kelas, tahun: year, bulan: month }, { merge: true });
+            batch.update(agregatRef, { [`rekap.tgl_${day}.${statusFieldAgregat}`]: firebase.firestore.FieldValue.increment(1) });
         });
 
         await batch.commit();
-
         Toastify({ text: `Berhasil menyimpan absensi lampau.`, duration: 3000, gravity: "top", position: "center", style: { background: "#4CAF50" } }).showToast();
         showQuickSummary();
 
@@ -1529,81 +1974,50 @@ document.getElementById('saveDailyCorrectionBtn').addEventListener('click', asyn
     try {
         const today = new Date();
         const tglString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1;
+        const year = today.getFullYear(), month = today.getMonth() + 1, day = today.getDate();
 
         const rekapHarianRef = db.collection('rekap_harian_per_kelas').doc(`${tglString}_${siswaClass}`);
         const rekapBulananRef = db.collection('rekap_bulanan').doc(`${nisn}_${year}-${month}`);
-        const logAbsensiRef = db.collection('log_absensi').doc(logId); // Referensi ke dokumen log yang akan diupdate
+        const logAbsensiRef = db.collection('log_absensi').doc(logId);
 
         const batch = db.batch();
 
         // 1. Update log_absensi
-        batch.update(logAbsensiRef, {
-            status: newStatus,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Update timestamp koreksi
-            dicatatOleh: currentUser.name // Tambahkan siapa yang mengoreksi
-        });
+        batch.update(logAbsensiRef, { status: newStatus, timestamp: firebase.firestore.FieldValue.serverTimestamp(), dicatatOleh: currentUser.name });
 
-        // 2. Update rekap_harian_per_kelas (Decrement status lama, increment status baru)
+        // 2. Update rekap_harian_per_kelas
         const oldField = originalStatus === 'Tanpa Keterangan' ? 'alpha' : originalStatus.toLowerCase();
         const newField = newStatus === 'Tanpa Keterangan' ? 'alpha' : newStatus.toLowerCase();
+        batch.update(rekapHarianRef, { [oldField]: firebase.firestore.FieldValue.increment(-1), [newField]: firebase.firestore.FieldValue.increment(1) });
         
-        batch.update(rekapHarianRef, {
-            [oldField]: firebase.firestore.FieldValue.increment(-1),
-            [newField]: firebase.firestore.FieldValue.increment(1)
-        });
-        
-        // 3. Update rekap_bulanan (arrayRemove old, arrayUnion new)
-        // Dapatkan data rekap bulanan saat ini untuk mencari detail yang lama
+        // 3. Update rekap_bulanan (rincian)
         const rekapBulananDoc = await rekapBulananRef.get();
         if (rekapBulananDoc.exists && rekapBulananDoc.data().absensi) {
-            const currentAbsensiArray = rekapBulananDoc.data().absensi;
-            // Cari detail yang sesuai dengan logId dan tanggal yang sama
-            const detailToRemove = currentAbsensiArray.find(
-                item => item.logId === logId && item.tanggal === tglString
-            );
-            
-            if (detailToRemove) {
-                batch.update(rekapBulananRef, {
-                    absensi: firebase.firestore.FieldValue.arrayRemove(detailToRemove)
-                });
-            }
+            const detailToRemove = rekapBulananDoc.data().absensi.find(item => item.logId === logId && item.tanggal === tglString);
+            if (detailToRemove) batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayRemove(detailToRemove) });
         }
-        
-        // Tambahkan detail baru ke rekap bulanan
-        batch.update(rekapBulananRef, {
-            absensi: firebase.firestore.FieldValue.arrayUnion({
-                tanggal: tglString,
-                status: newStatus,
-                logId: logId // Gunakan logId yang sama untuk konsistensi
-            })
-        });
-        
-        // Pastikan dokumen rekap bulanan ada (jika belum ada sama sekali)
-        batch.set(rekapBulananRef, { nisn: nisn, nama: siswaName, kelas: siswaClass, tahun: year, bulan: month }, { merge: true });
+        batch.update(rekapBulananRef, { absensi: firebase.firestore.FieldValue.arrayUnion({ tanggal: tglString, status: newStatus, logId: logId }) });
+        batch.set(rekapBulananRef, { nisn, nama: siswaName, kelas: siswaClass, tahun: year, bulan: month }, { merge: true });
 
-        // Commit semua operasi ke Firebase Firestore
+        // 4. >>> KODE BARU: Update Agregat Harian <<<
+        const oldStatusFieldAgregat = originalStatus === 'Tanpa Keterangan' ? 'alfa' : originalStatus.toLowerCase();
+        const newStatusFieldAgregat = newStatus === 'Tanpa Keterangan' ? 'alfa' : newStatus.toLowerCase();
+        const agregatDocId = `${siswaClass}-${year}-${month}`;
+        const agregatRef = db.collection('agregat_bulanan_kelas').doc(agregatDocId);
+        batch.set(agregatRef, { kelas: siswaClass, tahun: year, bulan: month }, { merge: true });
+        batch.update(agregatRef, {
+            [`rekap.tgl_${day}.${oldStatusFieldAgregat}`]: firebase.firestore.FieldValue.increment(-1),
+            [`rekap.tgl_${day}.${newStatusFieldAgregat}`]: firebase.firestore.FieldValue.increment(1)
+        });
+
         await batch.commit();
 
-        // Panggil kirimDataAbsensiKeSheet TANPA 'await'
-        kirimDataAbsensiKeSheet(nisn, newStatus).catch(error => {
-            console.error("Error mengirim notifikasi ke Apps Script (non-blocking koreksi):", error);
-        });
-
-        // Feedback sukses dan perbarui tampilan
         Toastify({ text: `Koreksi absensi ${siswaName} berhasil disimpan!`, duration: 3000, gravity: "top", position: "center", style: { background: "#4CAF50" } }).showToast();
-        $('#dailyCorrectionModal').modal('hide'); // Sembunyikan modal koreksi
-        await showDailyCorrectionForm(); // Refresh daftar koreksi setelah update
+        $('#dailyCorrectionModal').modal('hide');
+        await showDailyCorrectionForm();
 
     } catch (error) {
-        Toastify({
-            text: "Gagal menyimpan koreksi: " + error.message,
-            duration: 3000,
-            gravity: "top",
-            position: "center",
-            style: { background: "#dc3545" }
-        }).showToast();
+        Toastify({ text: "Gagal menyimpan koreksi: " + error.message, duration: 3000, gravity: "top", position: "center", style: { background: "#dc3545" } }).showToast();
         console.error("Error saving daily correction:", error);
     } finally {
         saveButton.disabled = false;
